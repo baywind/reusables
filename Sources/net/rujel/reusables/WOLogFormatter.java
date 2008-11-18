@@ -1,0 +1,219 @@
+//  WOLogFormatter.java
+
+/*
+ * Copyright (c) 2008, Gennady & Michael Kushnir
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without modification, are
+ * permitted provided that the following conditions are met:
+ * 
+ * 	•	Redistributions of source code must retain the above copyright notice, this
+ * 		list of conditions and the following disclaimer.
+ * 	•	Redistributions in binary form must reproduce the above copyright notice,
+ * 		this list of conditions and the following disclaimer in the documentation
+ * 		and/or other materials provided with the distribution.
+ * 	•	Neither the name of the RUJEL nor the names of its contributors may be used
+ * 		to endorse or promote products derived from this software without specific 
+ * 		prior written permission.
+ * 		
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+ * SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ * TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+package net.rujel.reusables;
+
+import com.webobjects.foundation.*;
+import com.webobjects.eocontrol.*;
+import com.webobjects.appserver.*;
+import com.webobjects.eoaccess.EOUtilities;
+import java.util.logging.*;
+import java.text.*;
+import java.util.Date;
+import java.util.Enumeration;
+
+public class WOLogFormatter extends Formatter {
+	public static final String SESSION = "session";
+	public static final String EO = "eo";
+	protected static final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd\tHH:mm:ss\t");
+	
+
+	public static String formatTrowable(Throwable t) {
+		StringBuffer result = new StringBuffer();
+		formatTrowable(t,result);
+		return result.toString();
+	}
+	
+	protected static boolean myClass(String className) {
+		if(className.indexOf('.') < 0) return true;
+		if(className.startsWith("net.rujel.")) return true;
+		if(className.startsWith("java")) return false;
+		if(className.startsWith("com.webobjects.")) return false;
+		if(className.startsWith("com.sun.")) return false;
+		if(className.startsWith("sun.")) return false;
+		if(className.startsWith("org.omg.")) return false;
+		if(className.startsWith("org.w3c.")) return false;
+		if(className.startsWith("org.xml.")) return false;
+		return true;
+	}
+	
+	public static StringBuffer formatTrowable(Throwable t,StringBuffer toAppend) {
+		return formatTrowable(t,toAppend,null);
+	}
+	public static StringBuffer formatTrowable(Throwable t,StringBuffer toAppend,StackTraceElement lastElem) {
+		toAppend.append(t.getClass().getName()).append(':').append(' ').append(t.getMessage());
+		StackTraceElement[] trace = t.getStackTrace();
+		boolean fin = false;
+		for (int i = 0; i < trace.length; i++) {
+			fin = (lastElem != null && trace[i].equals(lastElem));
+			if(i==0 || fin || myClass(trace[i].getClassName())) {
+				toAppend.append('\n').append('[').append(i).append(']').append('\t');
+				toAppend.append(trace[i].getClassName()).append('.');
+				toAppend.append(trace[i].getMethodName()).append(':').append(trace[i].getLineNumber());
+			}
+			if(fin)
+				break;
+		}
+		if(t.getCause() != null && t.getCause() != t) {
+			toAppend.append('\n');
+			formatTrowable(t.getCause(),toAppend,trace[0]);
+		} else if(t instanceof NSForwardException) {
+			toAppend.append('\n');
+			formatTrowable(((NSForwardException)t).originalException(),toAppend,trace[0]);
+		}
+		return toAppend;
+	}
+
+	public static String formatEO(EOEnterpriseObject eo) {
+		StringBuffer result = new StringBuffer();
+		formatEO(eo,result);
+		return result.toString();
+	}
+	
+	public static StringBuffer formatEO(EOEnterpriseObject eo,StringBuffer toAppend) {
+		toAppend.append(eo.entityName()).append(':');
+		EOEditingContext ec = eo.editingContext();
+		if(ec == null) {
+			toAppend.append("null");
+		} else {
+			NSDictionary pkey = EOUtilities.primaryKeyForObject(ec,eo);
+			if(pkey == null) {
+				toAppend.append("new");
+			} else if(pkey.count() > 1) {
+				toAppend.append(pkey);
+			} else {
+				toAppend.append(pkey.allValues().objectAtIndex(0));
+			}
+		}
+		return toAppend;
+	}
+	protected StringBuffer formatDictionary(NSDictionary dict, StringBuffer buf) {
+		Enumeration den = dict.keyEnumerator();
+		Object key = null;
+		while (den.hasMoreElements()) {
+			key = den.nextElement();
+			buf.append(key).append(" =\t");
+			formatObject(dict.objectForKey(key),buf).append('\n');
+		}
+		return buf;
+	}
+	
+	protected StringBuffer formatArray(NSArray array, StringBuffer buf) {
+		Enumeration aen = array.objectEnumerator();
+		Object obj = null;
+		buf.append('{');
+		while (aen.hasMoreElements()) {
+			obj = aen.nextElement();
+			formatObject(obj,buf);
+			if(aen.hasMoreElements())
+				buf.append(" ; ");
+		}
+		buf.append('}');
+		return buf;
+	}
+	
+	protected StringBuffer formatObject(Object obj, StringBuffer buf) {
+		if(obj instanceof EOEnterpriseObject) {
+			formatEO((EOEnterpriseObject)obj,buf);
+		} else if(obj instanceof NSDictionary) {
+			formatDictionary((NSDictionary)obj,buf);
+		} else if(obj instanceof NSArray) {
+			formatArray((NSArray)obj,buf);
+		} else if(obj instanceof WOSession) {
+			buf.append(obj.getClass().getName()).append(':').append(((WOSession)obj).sessionID());
+		} else {
+			buf.append(obj);
+		}
+		return buf;
+	}
+	
+	public String format(LogRecord record) {
+		WOSession ses = null;
+		EOEnterpriseObject eo = null;
+		Throwable t = record.getThrown();
+		NSMutableArray otherObjects = new NSMutableArray();
+		
+		Object[] param = record.getParameters();
+		if(param != null && param.length > 0) {
+			for (int i = 0; i < param.length; i++) {
+				if(param[i] instanceof WOSession) {
+					ses = (WOSession)param[i];
+				} else if (param[i] instanceof EOEnterpriseObject) {
+					eo = (EOEnterpriseObject)param[i];
+					if(ses == null && eo.editingContext() instanceof SessionedEditingContext) {
+						ses = ((SessionedEditingContext)eo.editingContext()).session();
+					}
+				} else if(param[i] instanceof Throwable) {
+					t = (Throwable)param[i];
+				} else if(param[i] instanceof NSDictionary) {
+					NSMutableDictionary tmp = ((NSDictionary)param[i]).mutableClone();
+					if(ses == null) ses = (WOSession)tmp.objectForKey(SESSION);
+					if(eo == null) eo = (EOEnterpriseObject)tmp.objectForKey(EO);
+					tmp.removeObjectForKey(SESSION);
+					tmp.removeObjectForKey(EO);
+					if(tmp.count() > 0) {
+						otherObjects.addObject(tmp);
+					}
+				} else if(param[i] == null) {
+					otherObjects.addObject(NSKeyValueCoding.NullValue);
+				} else {
+					otherObjects.addObject(param[i]);
+				}
+			}
+		}
+		
+		StringBuffer result = new StringBuffer();
+		Date dt = new Date(record.getMillis());
+		FieldPosition fp = new FieldPosition(DateFormat.MILLISECOND_FIELD);
+		df.format(dt,result,fp);
+		result.append(record.getLevel().getName()).append('\t');
+		if(ses != null) {
+			result.append(ses.sessionID());
+		}
+		
+		result.append('\t').append(formatMessage(record));
+		
+		if(eo != null) {
+			result.append('\t').append('<');
+			formatEO(eo,result).append('>');
+		}
+		if(t != null) {
+			result.append('\n');
+			formatTrowable(t,result);
+		}
+		if(otherObjects.count() > 0) {
+			Enumeration en = otherObjects.objectEnumerator();
+			while(en.hasMoreElements()) {
+				result.append('\n');
+				formatObject(en.nextElement(),result);
+			}
+		}
+		return result.append("\r\n").toString();
+	}
+}
