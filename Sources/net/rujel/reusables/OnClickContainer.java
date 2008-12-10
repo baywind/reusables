@@ -53,7 +53,7 @@ public class OnClickContainer extends com.webobjects.appserver.WOComponent {
     	if(!disabled) {
     		onclick = (String)valueForBinding("onclick");
     		if(onclick == null && hasBinding("invokeAction"))
-    			onclick = (String)session().valueForKey("checkRun");
+    			onclick = "location = '" + context().componentActionURL() + "';return true;";
     	}
     	if(onclick == null)
     		disabled = true;

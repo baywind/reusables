@@ -85,38 +85,11 @@ public class DynamicTableRow extends WOComponent {
 		return (String)color;
 	}
 
-	public String onMouseOver() {
-		if(!Boolean.TRUE.equals(valueForBinding("useStyles")))
-			return null;
-		if(Boolean.TRUE.equals(valueForBinding("inactivateSelection")) && valueForBinding("item").equals(valueForBinding("selection")))
-			return null; 
-		if(valueForBinding("onClick")!=null || hasBinding("selectAction"))
-			return "className = '" + style() + "Dim';";
-		return null;
+	public boolean disabled () {
+		return ((!hasBinding("inactivateSelection") 
+				|| Boolean.TRUE.equals(valueForBinding("inactivateSelection"))) 
+				&& valueForBinding("item").equals(valueForBinding("selection")));
 	}
-
-	public String onMouseOut () {
-		if(!Boolean.TRUE.equals(valueForBinding("useStyles")))
-			return null;
-		if(Boolean.TRUE.equals(valueForBinding("inactivateSelection")) && valueForBinding("item").equals(valueForBinding("selection")))
-			return null;
-		if(valueForBinding("onClick")!=null || hasBinding("selectAction"))
-			return "className = '" + style() + "';";
-		return null;
-	}
-
-	public String onClick() {
-		if(hasBinding("onClick"))
-			return (String)valueForBinding("onClick");
-
-		if((!hasBinding("inactivateSelection") || Boolean.TRUE.equals(valueForBinding("inactivateSelection"))) && valueForBinding("item").equals(valueForBinding("selection")))
-			return null;
-
-		String href = context().componentActionURL();
-		String result = "location = '" + href + "';return true;";			
-		//actions.setObjectForKey(item,context().elementID());
-		return result;
-	}	
 
 	public String style() {
 		if(!Boolean.TRUE.equals(valueForBinding("useStyles")))
