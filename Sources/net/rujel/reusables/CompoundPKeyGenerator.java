@@ -84,14 +84,19 @@ public class CompoundPKeyGenerator {
 				}
 			}
 		}
+		boolean error = false;
 		for (int i = 0; i < values.length; i++) {
 			if(values[i] == null) {
-				Object[] args = new Object[] {eo,pKeys};
-				Logger.getLogger("rujel.archiving").log(WOLogLevel.WARNING,
-						"Could not resolve required attributes for archiving eo",args);
-				return null;
+				values[i] = NSKeyValueCoding.NullValue;
+				error = true;
 			}
 		}
-		return new NSDictionary (values,pKeys.objects());
+		NSDictionary result = new NSDictionary (values,pKeys.objects());
+		if(error) {
+			Object[] args = new Object[] {eo,result};
+			Logger.getLogger("rujel").log(WOLogLevel.WARNING,
+					"Could not get value for building compound primary key for object",args);
+		}
+		return (error)?null:result;
 	}
 }

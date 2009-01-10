@@ -66,11 +66,15 @@ public class Flags extends Number implements Cloneable{
 	public Integer toInteger() {
 		return new Integer(flags);
 	}
-
-	public boolean getFlag(int reg) {
+	
+	public static boolean getFlag(int reg, int flags) {
 		int tmp = flags >>> reg;
 		tmp = tmp & 1;
-		return (tmp == 1);
+		return (tmp == 1);	
+	}
+
+	public boolean getFlag(int reg) {
+		return getFlag(reg, flags);
 	}
 	
 	public byte[] toBytes () {
