@@ -138,8 +138,8 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 						result.addObject(res);
 				} catch (java.lang.reflect.InvocationTargetException tex) {
 					logger.logp(Level.WARNING,"ModulesInitialiser","useModules","Error executing module method :" + modules[i] + " with parameter \'" + param + '\'',new Object[] {ses,tex.getCause()});
-					String message = (String)WOApplication.application().valueForKeyPath("strings.messages.errorInModule") + modules[i].getDeclaringClass().getName() + '(' + param + ')' + tex;
-					ses.takeValueForKey(message,"message");
+//					String message = (String)WOApplication.application().valueForKeyPath("extStrings.Strings.messages.errorInModule") + modules[i].getDeclaringClass().getName() + '(' + param + ')' + tex;
+//					ses.takeValueForKey(message,"message");
 				} catch (Exception ex) {
 					logger.logp(Level.WARNING,"ModulesInitialiser","useModules","Could not execute module method : " + modules[i] + " with parameter \'" + param + '\'',new Object[] {ses,ex});
 				}
