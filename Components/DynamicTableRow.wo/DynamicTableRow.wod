@@ -1,7 +1,7 @@
 ComponentContent1: WOComponentContent {
 }
 
-Generic1: OnClickContainer {
+OnClickContainer: OnClickContainer {
 	bgcolor = color;
 	elementName = "TR";
 	disabled = disabled;
