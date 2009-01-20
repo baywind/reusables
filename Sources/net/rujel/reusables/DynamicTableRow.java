@@ -95,7 +95,8 @@ public class DynamicTableRow extends WOComponent {
 		if(!Boolean.TRUE.equals(valueForBinding("useStyles")))
 			return null;
 		String result = (isGerade())?"gerade":"ungerade";
-		if (valueForBinding("item").equals(valueForBinding("selection"))) {
+		if ((hasBinding("isSelected"))?Various.boolForObject(valueForBinding("isSelected")):
+				valueForBinding("item").equals(valueForBinding("selection"))) {
 			result = "selection";
 		}
 		String suffix = (String)valueForBinding("styleSuffix");

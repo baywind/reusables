@@ -94,8 +94,11 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 			}
 		}
 	}*/
-	
 	public static Object[] initModules(SettingsReader list,Object param) {
+		return initModules(list, param, null);
+	}
+
+	public static Object[] initModules(SettingsReader list,Object param,WOContext ctx) {
 		if(modules == null)
 			readModules(list);
 		if(modules == null) return null;
@@ -103,7 +106,7 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 		for (int i = 0; i < modules.length; i++) {
 			if(modules[i] != null) {
 				try {
-					result[i] = modules[i].invoke(null,param,(WOContext)null);
+					result[i] = modules[i].invoke(null,param,ctx);
 				} catch (java.lang.reflect.InvocationTargetException tex) {
 					logger.logp(Level.WARNING,"ModulesInitialiser","initModules","Error performing initialisation of module " + modules[i],tex);
 					throw new RuntimeException("Error performing initialisation" + tex.getCause(),tex.getCause());
@@ -123,12 +126,17 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 	}
 	
 	public NSArray useModules(Object param) {
+		return useModules(ses.context(),param);
+	}
+	
+	public static NSArray useModules(WOContext ctx,Object param) {
 		if(modules == null) return null;
+		WOSession ses = (ctx.hasSession())?ctx.session():null;
 		NSMutableArray result = new NSMutableArray();
 		for (int i = 0; i < modules.length; i++) {
 			if(modules[i] != null) {
 				try {
-					Object res = modules[i].invoke(null,param,ses.context());
+					Object res = modules[i].invoke(null,param,ctx);
 					if(res == null) continue;
 					if(res instanceof NSArray) {
 						result.addObjectsFromArray((NSArray)res);

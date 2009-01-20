@@ -50,6 +50,36 @@
 			<string>ноя</string>
 			<string>дек</string>
 		</array>
+		<key>monthDate</key>
+		<array>
+			<string>января</string>
+			<string>февраля</string>
+			<string>марта</string>
+			<string>апреля</string>
+			<string>мая</string>
+			<string>июня</string>
+			<string>июля</string>
+			<string>августа</string>
+			<string>сентября</string>
+			<string>октября</string>
+			<string>ноября</string>
+			<string>декабря</string>
+		</array>
+		<key>monthLong</key>
+		<array>
+			<string>Январь</string>
+			<string>Февраль</string>
+			<string>Март</string>
+			<string>Апрель</string>
+			<string>Май</string>
+			<string>Июнь</string>
+			<string>Июль</string>
+			<string>Август</string>
+			<string>Сентябрь</string>
+			<string>Октябрь</string>
+			<string>Ноябрь</string>
+			<string>Декабрь</string>
+		</array>
 		<key>sexLetter</key>
 		<dict>
 			<key>female</key>
@@ -67,6 +97,17 @@
 			<string>пт</string>
 			<string>сб</string>
 			<string>вс</string>
+		</array>
+		<key>weekdayLong</key>
+		<array>
+			<string>Воскресенье</string>
+			<string>Понедельник</string>
+			<string>Вторник</string>
+			<string>Среда</string>
+			<string>Четверг</string>
+			<string>Пятница</string>
+			<string>Суббота</string>
+			<string>Воскресенье</string>
 		</array>
 	</dict>
 	<key>uiElements</key>

@@ -47,4 +47,8 @@ public class StringStorage implements NSKeyValueCoding {
 			_strings.takeValueForKey(value, key);
 		//throw new IllegalArgumentException("You can only add dictionaries to StringStorage");
 	}
+	
+	public void flush() {
+		_strings.removeAllObjects();
+	}
 }
