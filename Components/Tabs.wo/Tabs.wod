@@ -46,6 +46,7 @@ TabContainer: OnClickContainer {
 	onclick = onClick;
 	title = hover;
 	style = "white-space:nowrap;";
+	id = tabID;
 }
 
 Table: WOGenericContainer {

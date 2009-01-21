@@ -196,11 +196,31 @@ public class Tabs extends WOComponent {
 	}
 	
 	public String tabStyle() {
-		if(tabItem == null || index == null) return "grey";
+		Object currTab = valueForBinding("currTab");
+		if(tabItem == null || index == null || currTab == null) return "grey";
 		if(Various.boolForObject(valueForBinding("numeric"))) {
-			if(index.equals(valueForBinding("currTab"))) return "selection";
+			if(index.equals(currTab)) return "selection";
 		} else {
-			if(tabItem.equals(valueForBinding("currTab"))) return "selection";
+			String idAttribute = (String)valueForBinding("idAttribute");
+			if(idAttribute != null) {
+				try {
+					Object recent = NSKeyValueCoding.Utility.valueForKey(
+							tabItem, idAttribute);
+					if (recent != null) {
+						if (recent.equals(currTab))
+							return "selection";
+						Object sel = NSKeyValueCoding.Utility.valueForKey(
+								currTab, idAttribute);
+						if (recent.equals(sel))
+							return "selection";
+					}
+				} catch (Exception e) {
+					;
+				}
+			} else {
+				if(tabItem.equals(currTab))
+					return "selection";
+			}
 		}
 		return "grey";
 	}
@@ -246,5 +266,13 @@ public class Tabs extends WOComponent {
 		public boolean defaultCurrent();
 		
 		public boolean equals(Object aTab);
+	}
+
+	public String tabID() {
+		String idAttribute = (String)valueForBinding("idAttribute");
+		if(idAttribute == null)
+			return null;
+		Object id = NSKeyValueCoding.Utility.valueForKey(tabItem, idAttribute);
+		return (id == null)?null:id.toString();
 	}
 }
