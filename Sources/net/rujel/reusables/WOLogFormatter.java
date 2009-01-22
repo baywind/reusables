@@ -49,7 +49,16 @@ public class WOLogFormatter extends Formatter {
 		formatTrowable(t,result);
 		return result.toString();
 	}
+	public static String formatTrowableHTML(Throwable t) {
+		StringBuffer result = new StringBuffer();
+		formatTrowable(t,result,null,true);
+		return result.toString();
+	}
 	
+	public static StringBuffer formatTrowable(Throwable t,StringBuffer toAppend) {
+		return formatTrowable(t,toAppend,null,false);
+	}
+
 	protected static boolean myClass(String className) {
 		if(className.indexOf('.') < 0) return true;
 		if(className.startsWith("net.rujel.")) return true;
@@ -63,29 +72,44 @@ public class WOLogFormatter extends Formatter {
 		return true;
 	}
 	
-	public static StringBuffer formatTrowable(Throwable t,StringBuffer toAppend) {
-		return formatTrowable(t,toAppend,null);
-	}
-	public static StringBuffer formatTrowable(Throwable t,StringBuffer toAppend,StackTraceElement lastElem) {
-		toAppend.append(t.getClass().getName()).append(':').append(' ').append(t.getMessage());
+	protected static StringBuffer formatTrowable(Throwable t,StringBuffer toAppend,StackTraceElement lastElem,boolean html) {
+		if(html) toAppend.append("<b>");
+		toAppend.append(t.getClass().getName());
+		if(html) toAppend.append("</b>");
+		toAppend.append(':').append(' ');
+		if(html)
+			toAppend.append(WOMessage.stringByEscapingHTMLString(t.getMessage()));
+		else
+			toAppend.append(t.getMessage());
 		StackTraceElement[] trace = t.getStackTrace();
 		boolean fin = false;
 		for (int i = 0; i < trace.length; i++) {
 			fin = (lastElem != null && trace[i].equals(lastElem));
 			if(i==0 || fin || myClass(trace[i].getClassName())) {
-				toAppend.append('\n').append('[').append(i).append(']').append('\t');
+				if(html) toAppend.append("<br/>");
+				toAppend.append('\n');
+				//if(html) toAppend.append("<span style=\"width:3em;\">");
+				toAppend.append('[').append(i).append(']');
+				//if(html) toAppend.append("</span> ");
+				//else 
+				toAppend.append('\t');
 				toAppend.append(trace[i].getClassName()).append('.');
-				toAppend.append(trace[i].getMethodName()).append(':').append(trace[i].getLineNumber());
+				if(html) toAppend.append("<i>");
+				toAppend.append(trace[i].getMethodName());
+				if(html) toAppend.append("</i>");
+				toAppend.append(':').append(trace[i].getLineNumber());
 			}
 			if(fin)
 				break;
 		}
 		if(t.getCause() != null && t.getCause() != t) {
+			if(html) toAppend.append("<br/>");
 			toAppend.append('\n');
-			formatTrowable(t.getCause(),toAppend,trace[0]);
+			formatTrowable(t.getCause(),toAppend,trace[0],html);
 		} else if(t instanceof NSForwardException) {
+			if(html) toAppend.append("<br/>");
 			toAppend.append('\n');
-			formatTrowable(((NSForwardException)t).originalException(),toAppend,trace[0]);
+			formatTrowable(((NSForwardException)t).originalException(),toAppend,trace[0],html);
 		}
 		return toAppend;
 	}
