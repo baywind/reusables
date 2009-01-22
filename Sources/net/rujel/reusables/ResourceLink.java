@@ -48,7 +48,7 @@ public class ResourceLink extends com.webobjects.appserver.WOComponent {
     	if(cssLink != null) {
     		aResponse.appendContentString("<link href=\"");
     		aResponse.appendContentString(rm.urlForResourceNamed(cssLink, framework, languagesList, req));
-    		aResponse.appendContentString("\" rel=\"stylesheet\" type=\"text/css\">\n");
+    		aResponse.appendContentString("\" rel=\"stylesheet\" type=\"text/css\"/>\n");
     	}
     	if(jsLink != null) {
     		aResponse.appendContentString("<script type=\"text/javascript\" language=\"JavaScript\" src=\"");

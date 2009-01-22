@@ -3,7 +3,7 @@ ComponentContent1: WOComponentContent {
 
 OnClickContainer: OnClickContainer {
 	bgcolor = color;
-	elementName = "TR";
+	elementName = "tr";
 	disabled = disabled;
 	class = style;
 	invokeAction = ^selectAction;
