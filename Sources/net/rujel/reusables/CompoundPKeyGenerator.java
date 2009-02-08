@@ -57,6 +57,8 @@ public class CompoundPKeyGenerator {
 	}
 	
 	public static NSDictionary compoundKey(EOEnterpriseObject eo, NSArray pKeys,NSArray relationships) {
+		if(pKeys == null || pKeys.count() <= 1)
+			return null;
 		EOEditingContext ec = eo.editingContext();
 		Object[] values = new Object[pKeys.count()];
 		Enumeration enu = relationships.objectEnumerator();
