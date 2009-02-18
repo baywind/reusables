@@ -195,7 +195,7 @@ public class PlistReader extends SettingsReader {
 		return next;
 	}
 	
-	public static NSDictionary cloneDictionary (NSDictionary dict, boolean recurse) {
+	public static NSMutableDictionary cloneDictionary (NSDictionary dict, boolean recurse) {
 		if(dict == null) return null;
 		NSMutableDictionary result = new NSMutableDictionary();
 		Enumeration enu = dict.keyEnumerator();
@@ -215,7 +215,7 @@ public class PlistReader extends SettingsReader {
 		return result;
 	}
 	
-	public static NSArray cloneArray(NSArray array, boolean recurse) {
+	public static NSMutableArray cloneArray(NSArray array, boolean recurse) {
 		if(array ==null) return null;
 		NSMutableArray result = new NSMutableArray();
 		Enumeration enu = array.objectEnumerator();
