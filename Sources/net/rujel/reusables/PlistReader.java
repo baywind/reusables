@@ -30,6 +30,7 @@
 package net.rujel.reusables;
 
 import java.util.Enumeration;
+import java.io.File;
 import java.io.FileInputStream;
 
 import com.webobjects.appserver.WOApplication;
@@ -54,7 +55,15 @@ public class PlistReader extends SettingsReader {
 			inputFilePath = WOApplication.application().resourceManager().
 				pathURLForResourceNamed("defaultSettings.plist", null, null).getFile();
 			if(inputFilePath == null)
-				throw new IllegalStateException("Required environment variable \"PlistReader.filePath\"");
+				throw new IllegalStateException(
+						"Required environment variable \"PlistReader.filePath\"");
+		} else {
+			inputFilePath = inputFilePath.replaceFirst("LOCALROOT",
+					System.getProperty("WOLocalRootDirectory",""));
+			inputFilePath = inputFilePath.replaceFirst("WOROOT",
+					System.getProperty("WORootDirectory","/System"));
+			if(File.separatorChar != '/')
+				inputFilePath = inputFilePath.replaceAll("/", File.separator);
 		}
 		encoding = System.getProperty("PlistReader.encoding","utf8");
 	 	innerKeyPath = new StringBuffer(System.getProperty("PlistReader.innerKeyPath",""));
