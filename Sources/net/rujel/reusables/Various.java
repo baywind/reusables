@@ -86,4 +86,12 @@ public class Various {
 			return Integer.toString(value);
 		}
 	}
+	
+	public static String cleanURL(String url) {
+		if(url.startsWith("http")) {
+			int pos = url.indexOf('/',8);
+			url = url.substring(pos);
+		}
+		return url;
+	}
 }

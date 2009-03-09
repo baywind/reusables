@@ -83,14 +83,15 @@ public class ImageMap extends WOComponent {
         return application().resourceManager().urlForResourceNamed ((String)mapResources().valueForKey("imageFile"), null, null, context().request());
 
     }
-		
+
     public String areaHref() {
-				String href = (String)area.valueForKey("href");
-        if (href == null) {
-						href = context().directActionURLForActionNamed((String)area.valueForKey("directAction"), null);
-				} else {
-					href = href + "\" target=\"separate";
-				}
-		return href;
-		}
+    	String href = (String)area.valueForKey("href");
+    	if (href == null) {
+    		href = context().directActionURLForActionNamed((String)area.valueForKey("directAction"), null);
+    	} else {
+    		href = href + "\" target=\"separate";
+    	}
+    	href = Various.cleanURL(href);
+    	return href;
+    }
 }
