@@ -91,7 +91,7 @@ public class DisplayAny extends ExtDynamicElement {
 		}
 		WOElement presenter = WOApplication.application().dynamicElementWithName(
 				presenterName, associations, children, null);
-			
+
 		// make wrapper
 		presenterName = (String)dict.valueForKey("wrapper");
 		bindings = (NSDictionary)dict.valueForKey("wrapperBindings");
@@ -115,19 +115,34 @@ public class DisplayAny extends ExtDynamicElement {
 
 	public void appendToResponse(WOResponse aResponse, WOContext aContext) {
 		NSDictionary dict = (NSDictionary)valueForBinding("dict", aContext);
-		if(dict == null || dict.count() == 0 || 
-				Various.boolForObject(dict.valueForKey("toString"))) {
-			Object value = valueForBinding("value", aContext);
-			if(dict != null) {
+		Object value = null;
+		if(dict == null || dict.count() == 0) {
+			value = valueForBinding("value", aContext);
+		} else {
+			value = dict.valueForKey("presenter");
+			if(value == null)
+				value = dict.valueForKey("presenterBindings");
+			if(value == null)
+				value = dict.valueForKey("wrapper");
+			if(value == null)
+				value = dict.valueForKey("wrapperBindings");
+			
+			if(value == null) {
+				value = valueForBinding("value", aContext);
 				String path = (String)dict.valueForKey("titlePath");
 				if(path != null)
 					value = NSKeyValueCodingAdditions.Utility.valueForKeyPath(value, path);
+				value = WOMessage.stringByEscapingHTMLString(value.toString());
+			} else {
+				value = null;
 			}
-			aResponse.appendContentString(value.toString());
-			return;
 		}
-		WOElement presenter = getPresenter(dict);
-		presenter.appendToResponse(aResponse, aContext);
+		if(value != null) {
+			aResponse.appendContentString(value.toString());
+		} else {
+			WOElement presenter = getPresenter(dict);
+			presenter.appendToResponse(aResponse, aContext);
+		}
 	}
 	
 	public WOActionResults invokeAction(WORequest aRequest, WOContext aContext) {
