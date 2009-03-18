@@ -96,6 +96,9 @@ public class PlistReader extends SettingsReader {
 			return;
 		}
 		rootDict = (NSDictionary)readPlist(inputFilePath, encoding);
+		if(rootDict == null)
+			throw new NullPointerException("Could not read plist at specified path: " + inputFilePath);
+		System.out.println("Settings are read from " + inputFilePath);
 		if(innerKeyPath != null && innerKeyPath.length() > 0) {
 			pref = (NSDictionary)rootDict.valueForKeyPath(innerKeyPath.toString());
 			System.out.println("with inner keyPath " + innerKeyPath.toString());
@@ -108,10 +111,12 @@ public class PlistReader extends SettingsReader {
 			FileInputStream fis = new FileInputStream(filePath);
 			NSData data = new NSData(fis,fis.available());
 			fis.close();
-			System.out.println("Settings are read from " + filePath);
+			//System.out.println("Settings are read from " + filePath);
 			return NSPropertyListSerialization.propertyListFromData(data, encoding);
 		} catch (java.io.IOException ioex) {
-			throw new NSForwardException(ioex,"Error reading plist " + filePath + " using encoding " + encoding);
+			System.err.println("Error reading plist " + filePath + " using encoding " + encoding);
+			ioex.printStackTrace(System.err);
+			return null;
 		}
 	}
 	
