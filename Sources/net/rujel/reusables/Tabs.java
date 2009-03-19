@@ -157,11 +157,9 @@ public class Tabs extends WOComponent {
 		}
 		
 		attr = (String)valueForBinding("hoverAttribute");
-		if(attr != null && tabItem instanceof NSKeyValueCoding) {
-			if(attr.indexOf('.') > 0 && (tabItem instanceof NSKeyValueCodingAdditions))
-				return ((NSKeyValueCodingAdditions)tabItem).valueForKeyPath(attr).toString();
-			else
-				return ((NSKeyValueCoding)tabItem).valueForKey(attr).toString();
+		if(attr != null) {
+			Object value = NSKeyValueCodingAdditions.Utility.valueForKeyPath(tabItem, attr);
+			return (value==null)?null:value.toString();
 		}
 		if (tabItem instanceof GenericTab) {
 			GenericTab tab = (GenericTab) tabItem;
