@@ -129,6 +129,8 @@ public class DisplayAny extends ExtDynamicElement {
 			
 			if(value == null) {
 				value = valueForBinding("value", aContext);
+				if(value == null)
+					return;
 				String path = (String)dict.valueForKey("titlePath");
 				if(path != null)
 					value = NSKeyValueCodingAdditions.Utility.valueForKeyPath(value, path);
@@ -162,4 +164,43 @@ public class DisplayAny extends ExtDynamicElement {
 		}
 		super.takeValuesFromRequest(aRequest, aContext);
 	}
+	
+    public static class ValueReader implements NSKeyValueCodingAdditions {
+    	protected WOComponent page;
+    	
+    	public ValueReader (WOComponent page) {
+    		this.page = page;
+    	}
+    	
+    	public Object valueForKeyPath(String path) {
+    		int idx = path.indexOf('.');
+    		if(idx < 0)
+    			throw new UnsupportedOperationException("Path required");
+    		String referName = path.substring(0, idx);
+    		path = path.substring(idx + 1);
+    		Object inPlist = page.valueForKeyPath(path);
+    		if (inPlist instanceof String) {
+				String keyPath = (String) inPlist;
+				if(keyPath.charAt(0) == '$')
+					return page.valueForKeyPath(keyPath.substring(1));
+				if(keyPath.charAt(0) == '.') {
+					if(keyPath.length() > 1)
+						return page.valueForKeyPath(referName + keyPath);
+					else
+						return page.valueForKey(referName);
+				}
+			}
+    		return inPlist;
+    	}
+
+    	public void takeValueForKeyPath(Object arg0, String arg1) {
+    		throw new UnsupportedOperationException("Read only");								
+    	}
+    	public void takeValueForKey(Object arg0, String arg1) {
+    		throw new UnsupportedOperationException("Read only");				
+    	}
+    	public Object valueForKey(String arg0) {
+    		throw new UnsupportedOperationException("Path required");				
+    	}
+    }
 }
