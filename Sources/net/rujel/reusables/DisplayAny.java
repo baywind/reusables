@@ -151,7 +151,8 @@ public class DisplayAny extends ExtDynamicElement {
 		NSDictionary dict = (NSDictionary)valueForBinding("dict", aContext);
 		if(dict != null && Various.boolForObject(dict.valueForKey("invokeAction"))) {
 			WOElement presenter = getPresenter(dict);
-			return presenter.invokeAction(aRequest, aContext);
+			WOActionResults result = presenter.invokeAction(aRequest, aContext);
+			return result;
 		}
 		return super.invokeAction(aRequest, aContext);
 	}
