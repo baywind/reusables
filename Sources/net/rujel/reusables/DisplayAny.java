@@ -173,6 +173,10 @@ public class DisplayAny extends ExtDynamicElement {
     		this.page = page;
     	}
     	
+    	public void setPage(WOComponent page) {
+    		this.page = page;
+    	}
+    	
     	public Object valueForKeyPath(String path) {
     		int idx = path.indexOf('.');
     		if(idx < 0)
