@@ -29,12 +29,11 @@
 
 package net.rujel.reusables;
 
+import java.lang.reflect.Method;
 import java.util.Enumeration;
 
 import com.webobjects.appserver.*;
-import com.webobjects.foundation.NSDictionary;
-import com.webobjects.foundation.NSKeyValueCodingAdditions;
-import com.webobjects.foundation.NSMutableDictionary;
+import com.webobjects.foundation.*;
 
 public class DisplayAny extends ExtDynamicElement {
 
@@ -64,6 +63,10 @@ public class DisplayAny extends ExtDynamicElement {
 					String keyPath = ((String)value).substring(1);
 					associations.takeValueForKey(
 							WOAssociation.associationWithKeyPath(keyPath), key);
+				} else if((value instanceof String) && 
+						((String)value).charAt(0) == '^') {
+					associations.takeValueForKey(
+							WOAssociation.associationWithKeyPath((String)value), key);
 				} else {
 					associations.takeValueForKey(WOAssociation.associationWithValue(value), key);
 				}
@@ -168,7 +171,102 @@ public class DisplayAny extends ExtDynamicElement {
 	
     public static class ValueReader implements NSKeyValueCodingAdditions {
     	protected WOComponent page;
-    	
+
+    	public static Object evaluateDict(NSDictionary dict, String objectPath, WOComponent page) {
+			Object tmp = dict.valueForKey("methodName");
+			if(tmp == null)
+				return dict;
+			String methodName = (String)evaluateValue(tmp,objectPath, page);
+			try {
+				Method method = (Method)dict.valueForKey("parsedMethod");
+				if(method == null) {
+					tmp = dict.valueForKey("object");
+					Object object = evaluateValue(tmp,objectPath,page);
+					Class aClass = (object == null) ? null : object.getClass();
+					if (aClass == null) {
+						tmp = dict.valueForKey("class");
+						aClass = (Class) evaluateValue(tmp, objectPath, page);
+						if (aClass == null) {
+							tmp = dict.valueForKey("className");
+							if(tmp == null)
+								return dict;
+							String className = (String) evaluateValue(tmp,objectPath, page);
+							aClass = Class.forName(className);
+						}
+					}
+					Class[] params = null;
+					NSArray paramNames = (NSArray)dict.valueForKey("paramClasses");
+					if(paramNames != null && paramNames.count() > 0) {
+						params = new Class[paramNames.count()];
+						for (int i = 0; i < params.length; i++) {
+							tmp = paramNames.objectAtIndex(i);
+							String className = (String) evaluateValue(tmp,objectPath, page);
+							params[i] = Class.forName(className);
+						}
+					}
+
+					method = aClass.getMethod(methodName, params);
+					tmp = dict.valueForKey("cacheMethod");
+					if(Various.boolForObject(tmp)) {
+						try {
+							dict.takeValueForKey(method, "parsedMethod");
+						} catch (Exception e) {
+							// Could not cache...
+						}
+					}
+				}
+				Object[] values = null;
+				NSArray paramNames = (NSArray)dict.valueForKey("paramValues");
+				if(paramNames != null && paramNames.count() > 0) {
+					values = new Object[paramNames.count()];
+					for (int i = 0; i < values.length; i++) {
+						tmp = paramNames.objectAtIndex(i);
+						values[i] = evaluateValue(tmp,objectPath, page);
+					}
+				}
+				Object result = method.invoke(values);
+//				tmp = dict.valueForKey("cacheResult");
+//				if(Various.boolForObject(tmp)) {
+//					dict.takeValueForKey(result, "cachedResult");
+//				}
+				return result;
+			} catch (Exception e) {
+				throw new NSForwardException(e,"Error parsing method for dict: " + dict);
+			}
+    	}
+
+    	public static Object evaluateValue(Object inPlist, String objectPath, WOComponent page) {
+    		if (inPlist instanceof String) {
+				String keyPath = (String) inPlist;
+				if(keyPath.charAt(0) == '$') {
+					if(keyPath.length() > 1)
+						return page.valueForKeyPath(keyPath.substring(1));
+					else
+						return page;
+				}
+				if(keyPath.charAt(0) == '^') {
+					keyPath = keyPath.substring(1);
+					int idx = keyPath.indexOf('.');
+					if(idx < 0)
+						return page.valueForBinding(keyPath);
+					Object binding = page.valueForBinding(keyPath.substring(0,idx));
+					keyPath = keyPath.substring(idx);
+					return NSKeyValueCodingAdditions.Utility.valueForKeyPath(binding, keyPath);
+				}
+				if(keyPath.charAt(0) == '.') {
+					if(keyPath.length() > 1)
+						return page.valueForKeyPath(objectPath + keyPath);
+					else
+						return page.valueForKey(objectPath);
+				}
+			}
+    		if (inPlist instanceof NSDictionary) { // invoke method described in dict
+    			NSDictionary dict = (NSDictionary)inPlist;
+    			return evaluateDict(dict, objectPath, page);
+    		}
+    		return inPlist;    		
+    	}
+
     	public ValueReader (WOComponent page) {
     		this.page = page;
     	}
@@ -176,7 +274,7 @@ public class DisplayAny extends ExtDynamicElement {
     	public void setPage(WOComponent page) {
     		this.page = page;
     	}
-    	
+    	    	
     	public Object valueForKeyPath(String path) {
     		int idx = path.indexOf('.');
     		if(idx < 0)
@@ -184,18 +282,7 @@ public class DisplayAny extends ExtDynamicElement {
     		String referName = path.substring(0, idx);
     		path = path.substring(idx + 1);
     		Object inPlist = page.valueForKeyPath(path);
-    		if (inPlist instanceof String) {
-				String keyPath = (String) inPlist;
-				if(keyPath.charAt(0) == '$')
-					return page.valueForKeyPath(keyPath.substring(1));
-				if(keyPath.charAt(0) == '.') {
-					if(keyPath.length() > 1)
-						return page.valueForKeyPath(referName + keyPath);
-					else
-						return page.valueForKey(referName);
-				}
-			}
-    		return inPlist;
+    		return evaluateValue(inPlist, referName, page);
     	}
 
     	public void takeValueForKeyPath(Object arg0, String arg1) {
