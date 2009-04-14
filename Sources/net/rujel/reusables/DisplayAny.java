@@ -178,10 +178,10 @@ public class DisplayAny extends ExtDynamicElement {
 				return dict;
 			String methodName = (String)evaluateValue(tmp,objectPath, page);
 			try {
+				tmp = dict.valueForKey("object");
+				Object object = evaluateValue(tmp,objectPath,page);
 				Method method = (Method)dict.valueForKey("parsedMethod");
 				if(method == null) {
-					tmp = dict.valueForKey("object");
-					Object object = evaluateValue(tmp,objectPath,page);
 					Class aClass = (object == null) ? null : object.getClass();
 					if (aClass == null) {
 						tmp = dict.valueForKey("class");
@@ -224,7 +224,7 @@ public class DisplayAny extends ExtDynamicElement {
 						values[i] = evaluateValue(tmp,objectPath, page);
 					}
 				}
-				Object result = method.invoke(values);
+				Object result = method.invoke(object,values);
 //				tmp = dict.valueForKey("cacheResult");
 //				if(Various.boolForObject(tmp)) {
 //					dict.takeValueForKey(result, "cachedResult");
@@ -238,6 +238,8 @@ public class DisplayAny extends ExtDynamicElement {
     	public static Object evaluateValue(Object inPlist, String objectPath, WOComponent page) {
     		if (inPlist instanceof String) {
 				String keyPath = (String) inPlist;
+				if(keyPath.length() == 0)
+					return null;
 				if(keyPath.charAt(0) == '$') {
 					if(keyPath.length() > 1)
 						return page.valueForKeyPath(keyPath.substring(1));
