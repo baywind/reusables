@@ -31,6 +31,8 @@ package net.rujel.reusables;
 
 import com.webobjects.foundation.*;
 import com.webobjects.eocontrol.*;
+
+import java.io.File;
 import java.util.Enumeration;
 
 public class Various {
@@ -93,5 +95,17 @@ public class Various {
 			url = url.substring(pos);
 		}
 		return url;
+	}
+	
+	public static String convertFilePath(String filePath) {
+		if(filePath == null)
+			return null;
+		filePath = filePath.replaceFirst("LOCALROOT", System.getProperty("WOLocalRootDirectory",""));
+		filePath = filePath.replaceFirst("WOROOT", System.getProperty("WORootDirectory","/System"));
+		filePath = filePath.replaceFirst("~",
+				System.getProperty("WOUserDirectory","/root"));
+		if(File.separatorChar != '/')
+			filePath = filePath.replaceAll("/", File.separator);
+		return filePath;
 	}
 }

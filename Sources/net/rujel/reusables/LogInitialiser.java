@@ -39,6 +39,7 @@ public class LogInitialiser {
 		try {
 			LogManager lm = LogManager.getLogManager();
 			if(propertiesPath != null) {
+				propertiesPath = Various.convertFilePath(propertiesPath);
 				propsIn = new FileInputStream(propertiesPath);
 				System.out.println("Using logging.properties from: " + propertiesPath);
 			}

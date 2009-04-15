@@ -177,6 +177,16 @@ public class DisplayAny extends ExtDynamicElement {
 			if(tmp == null)
 				return dict;
 			String methodName = (String)evaluateValue(tmp,objectPath, page);
+			NSMutableDictionary resultCache = (NSMutableDictionary)dict
+					.objectForKey("resultCache");
+			if(resultCache != null) {
+				tmp = page.valueForKeyPath(objectPath);
+				if(tmp != null) {
+					tmp = resultCache.objectForKey(tmp);
+					if(tmp != null)
+						return tmp;
+				}
+			}
 			try {
 				tmp = dict.valueForKey("object");
 				Object object = evaluateValue(tmp,objectPath,page);
@@ -225,10 +235,18 @@ public class DisplayAny extends ExtDynamicElement {
 					}
 				}
 				Object result = method.invoke(object,values);
-//				tmp = dict.valueForKey("cacheResult");
-//				if(Various.boolForObject(tmp)) {
-//					dict.takeValueForKey(result, "cachedResult");
-//				}
+				tmp = dict.valueForKey("cacheResult");
+				if(Various.boolForObject(tmp)) {
+					tmp = page.valueForKeyPath(objectPath);
+					if(tmp == null)
+						return result;
+					if(resultCache != null) {
+						resultCache.setObjectForKey(result, tmp);
+					} else {
+						resultCache = new NSMutableDictionary(result, tmp);
+						dict.takeValueForKey(resultCache, "resultCache");
+					}
+				}
 				return result;
 			} catch (Exception e) {
 				throw new NSForwardException(e,"Error parsing method for dict: " + dict);
