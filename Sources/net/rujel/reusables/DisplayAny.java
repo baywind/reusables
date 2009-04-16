@@ -54,6 +54,11 @@ public class DisplayAny extends ExtDynamicElement {
 				if(".".equals(value)) {
 					associations.takeValueForKey(valueBinding, key);
 				} else if((value instanceof String) && 
+						((String)value).charAt(0) == '\'') {
+					String keyPath = ((String)value).substring(1);
+					associations.takeValueForKey(
+							WOAssociation.associationWithValue(keyPath), key);
+				} else if((value instanceof String) && 
 						((String)value).charAt(0) == '.') {
 					String keyPath = valueBinding.keyPath() + value;
 					associations.takeValueForKey(
@@ -137,7 +142,12 @@ public class DisplayAny extends ExtDynamicElement {
 				String path = (String)dict.valueForKey("titlePath");
 				if(path != null)
 					value = NSKeyValueCodingAdditions.Utility.valueForKeyPath(value, path);
-				value = WOMessage.stringByEscapingHTMLString(value.toString());
+				path = value.toString();
+				value = dict.valueForKey("escapeHTML");
+				if(value == null || Various.boolForObject(value))
+					value = WOMessage.stringByEscapingHTMLString(path);
+				else
+					value = path;
 			} else {
 				value = null;
 			}
@@ -252,12 +262,44 @@ public class DisplayAny extends ExtDynamicElement {
 				throw new NSForwardException(e,"Error parsing method for dict: " + dict);
 			}
     	}
+    	
+    	public static void clearResultCache(NSMutableDictionary dict, Object onObject, boolean recursive) {
+    		if(dict == null || dict.count() == 0)
+    			return;
+    		NSMutableDictionary resultCache = (NSMutableDictionary)dict.valueForKey("resultCache");
+    		if(resultCache != null) {
+    			if(onObject == null)
+    				dict.removeObjectForKey("resultCache");
+    			else
+    				resultCache.removeObjectForKey(onObject);
+    		}
+    		if(recursive) {
+    			Enumeration enu = dict.keyEnumerator();
+    			while (enu.hasMoreElements()) {
+					Object key = enu.nextElement();
+					Object value = dict.objectForKey(key);
+					if(value instanceof NSMutableDictionary)
+						clearResultCache((NSMutableDictionary)value,onObject,recursive);
+				}
+    			NSArray subParams = (NSArray)dict.valueForKey("subParams");
+    			if(subParams != null && subParams.count() > 0) {
+    				enu = subParams.objectEnumerator();
+    				while (enu.hasMoreElements()) {
+						NSMutableDictionary param = (NSMutableDictionary) enu.nextElement();
+						clearResultCache(param,onObject,recursive);
+					}
+    			}
+    		}
+    	}
 
     	public static Object evaluateValue(Object inPlist, String objectPath, WOComponent page) {
     		if (inPlist instanceof String) {
 				String keyPath = (String) inPlist;
 				if(keyPath.length() == 0)
 					return null;
+				if(keyPath.charAt(0) == '\'') {
+					return keyPath.substring(1);
+				}
 				if(keyPath.charAt(0) == '$') {
 					if(keyPath.length() > 1)
 						return page.valueForKeyPath(keyPath.substring(1));
