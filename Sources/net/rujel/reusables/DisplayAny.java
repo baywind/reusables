@@ -91,8 +91,14 @@ public class DisplayAny extends ExtDynamicElement {
 				WOAssociation valueBinding = (WOAssociation)bindingsDict.valueForKey("value");
 				String path = (String)dict.valueForKey("titlePath");
 				if(path != null) {
-					path = valueBinding.keyPath() + '.' + path;
-					valueBinding = WOAssociation.associationWithKeyPath(path);
+					if(valueBinding.isValueConstant()) {
+						Object value = valueBinding.valueInComponent(null);
+						value = NSKeyValueCodingAdditions.Utility.valueForKeyPath(value, path);
+						valueBinding = WOAssociation.associationWithValue(value);
+					} else {
+						path = valueBinding.keyPath() + '.' + path;
+						valueBinding = WOAssociation.associationWithKeyPath(path);
+					}
 				}
 				associations.takeValueForKey(valueBinding, "value");
 			}
@@ -142,7 +148,7 @@ public class DisplayAny extends ExtDynamicElement {
 				String path = (String)dict.valueForKey("titlePath");
 				if(path != null)
 					value = NSKeyValueCodingAdditions.Utility.valueForKeyPath(value, path);
-				path = value.toString();
+				path = (value == null)?"":value.toString();
 				value = dict.valueForKey("escapeHTML");
 				if(value == null || Various.boolForObject(value))
 					value = WOMessage.stringByEscapingHTMLString(path);
