@@ -53,6 +53,9 @@ public class Various {
 	public static EOQualifier getEOInQualifier(String key, NSArray values) {
 		if(values == null || values.count() == 0)
 			return null;
+		if(values.count() == 1)
+			return new EOKeyValueQualifier(key,
+					EOQualifier.QualifierOperatorEqual,values.objectAtIndex(0));
 		NSMutableArray quals = new NSMutableArray();
 		Enumeration en = values.objectEnumerator();
 		while (en.hasMoreElements()) {
