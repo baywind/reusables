@@ -29,6 +29,7 @@
 
 package net.rujel.reusables;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Enumeration;
 
@@ -188,15 +189,23 @@ public class DisplayAny extends ExtDynamicElement {
     public static class ValueReader implements NSKeyValueCodingAdditions {
     	protected WOComponent page;
 
-    	public static Object evaluateDict(NSDictionary dict, String objectPath, WOComponent page) {
+    	public static Object evaluateDict(NSDictionary dict, Object refObject, WOComponent page) {
 			Object tmp = dict.valueForKey("methodName");
 			if(tmp == null)
 				return dict;
-			String methodName = (String)evaluateValue(tmp,objectPath, page);
+			String methodName = (String)evaluateValue(tmp,refObject, page);
 			NSMutableDictionary resultCache = (NSMutableDictionary)dict
 					.objectForKey("resultCache");
 			if(resultCache != null) {
-				tmp = page.valueForKeyPath(objectPath);
+				if(refObject instanceof String) {
+					try {
+						tmp = page.valueForKeyPath((String)refObject);
+					} catch (UnknownKeyException e) {
+						tmp = refObject;
+					}
+				} else {
+					tmp = refObject;
+				}
 				if(tmp != null) {
 					tmp = resultCache.objectForKey(tmp);
 					if(tmp != null)
@@ -205,29 +214,29 @@ public class DisplayAny extends ExtDynamicElement {
 			}
 			try {
 				tmp = dict.valueForKey("object");
-				Object object = evaluateValue(tmp,objectPath,page);
+				Object object = evaluateValue(tmp,refObject,page);
 				Method method = (Method)dict.valueForKey("parsedMethod");
+				Class[] params = null;
 				if(method == null) {
 					Class aClass = (object == null) ? null : object.getClass();
 					if (aClass == null) {
 						tmp = dict.valueForKey("class");
-						aClass = (Class) evaluateValue(tmp, objectPath, page);
+						aClass = (Class) evaluateValue(tmp, refObject, page);
 						if (aClass == null) {
 							tmp = dict.valueForKey("className");
 							if(tmp == null)
 								return dict;
-							String className = (String) evaluateValue(tmp,objectPath, page);
+							String className = (String) evaluateValue(tmp,refObject, page);
 							aClass = Class.forName(className);
 						}
 					}
-					Class[] params = null;
 					NSArray paramNames = (NSArray)dict.valueForKey("paramClasses");
 					if(paramNames != null && paramNames.count() > 0) {
 						params = new Class[paramNames.count()];
 						for (int i = 0; i < params.length; i++) {
 							tmp = paramNames.objectAtIndex(i);
-							String className = (String) evaluateValue(tmp,objectPath, page);
-							params[i] = Class.forName(className);
+							String className = (String) evaluateValue(tmp,refObject, page);
+							params[i] = primitiveClassForName(className);
 						}
 					}
 
@@ -240,6 +249,8 @@ public class DisplayAny extends ExtDynamicElement {
 							// Could not cache...
 						}
 					}
+				} else {
+					params = method.getParameterTypes();
 				}
 				Object[] values = null;
 				NSArray paramNames = (NSArray)dict.valueForKey("paramValues");
@@ -247,13 +258,22 @@ public class DisplayAny extends ExtDynamicElement {
 					values = new Object[paramNames.count()];
 					for (int i = 0; i < values.length; i++) {
 						tmp = paramNames.objectAtIndex(i);
-						values[i] = evaluateValue(tmp,objectPath, page);
+						values[i] = coerceToClass(
+								evaluateValue(tmp,refObject, page),params[i]);
 					}
 				}
 				Object result = method.invoke(object,values);
 				tmp = dict.valueForKey("cacheResult");
 				if(Various.boolForObject(tmp)) {
-					tmp = page.valueForKeyPath(objectPath);
+					if(refObject instanceof String) {
+						try {
+							tmp = page.valueForKeyPath((String)refObject);
+						} catch (UnknownKeyException e) {
+							tmp = refObject;
+						}
+					} else {
+						tmp = refObject;
+					}
 					if(tmp == null)
 						return result;
 					if(resultCache != null) {
@@ -267,6 +287,74 @@ public class DisplayAny extends ExtDynamicElement {
 			} catch (Exception e) {
 				throw new NSForwardException(e,"Error parsing method for dict: " + dict);
 			}
+    	}
+    	
+    	public static Class primitiveClassForName(String className) 
+    									throws ClassNotFoundException {
+			if(className.equals("int"))
+				return Integer.TYPE;
+			else if (className.equals("boolean"))
+				return Boolean.TYPE;
+			else if (className.equals("byte"))
+				return Byte.TYPE;
+			else if (className.equals("char"))
+				return Character.TYPE;
+			else if (className.equals("short"))
+				return Short.TYPE;
+			else if (className.equals("long"))
+				return Long.TYPE;
+			else if (className.equals("float"))
+				return Float.TYPE;
+			else if (className.equals("double"))
+				return Double.TYPE;
+			else
+				return Class.forName(className);
+    	}
+    	
+    	public static Object coerceToClass(Object obj, Class cl) throws Exception{
+    		if(obj == null || cl.isInstance(obj))
+    			return obj;
+
+    		if(cl == Integer.TYPE || cl == Integer.class) {
+    			if(obj instanceof Number)
+    				return new Integer(((Number)obj).intValue());
+    			else if (obj instanceof String)
+    				return new Integer((String)obj);
+    		} else if(cl == Character.TYPE || cl == Character.class) {
+    			return new Character(obj.toString().charAt(0));
+    		} else if(cl == Boolean.TYPE || cl == Boolean.class) {
+    			return new Boolean(Various.boolForObject(obj));
+    		} else if(Number.class.isAssignableFrom(cl) || cl.isPrimitive()) {
+    			Constructor cn = cl.getConstructor(String.class);
+    			return cn.newInstance(obj.toString());
+    		} else if(cl == Long.TYPE || cl == Long.class) {
+    			if(obj instanceof Number)
+    				return new Long(((Number)obj).longValue());
+    			else if (obj instanceof String)
+    				return new Long((String)obj);
+    		} else if(cl == Double.TYPE || cl == Double.class) {
+    			if(obj instanceof Number)
+    				return new Double(((Number)obj).doubleValue());
+    			else if (obj instanceof String)
+    				return new Double((String)obj);
+    		} else if(cl == Float.TYPE || cl == Float.class) {
+    			if(obj instanceof Number)
+    				return new Float(((Number)obj).floatValue());
+    			else if (obj instanceof String)
+    				return new Float((String)obj);
+    		} else if(cl == Short.TYPE || cl == Short.class) {
+    			if(obj instanceof Number)
+    				return new Short(((Number)obj).shortValue());
+    			else if (obj instanceof String)
+    				return new Short((String)obj);
+    		} else if(cl == Byte.TYPE || cl == Byte.class) {
+    			if(obj instanceof Number)
+    				return new Byte(((Number)obj).byteValue());
+    			else if (obj instanceof String)
+    				return new Byte((String)obj);
+    		}
+    		throw new IllegalArgumentException("Could not coerce argument of type" +
+    				obj.getClass().getName() + " to required type" + cl.getName());
     	}
     	
     	public static void clearResultCache(NSMutableDictionary dict, Object onObject, boolean recursive) {
@@ -298,7 +386,7 @@ public class DisplayAny extends ExtDynamicElement {
     		}
     	}
 
-    	public static Object evaluateValue(Object inPlist, String objectPath, WOComponent page) {
+    	public static Object evaluateValue(Object inPlist, Object refObject, WOComponent page) {
     		if (inPlist instanceof String) {
 				String keyPath = (String) inPlist;
 				if(keyPath.length() == 0)
@@ -322,15 +410,25 @@ public class DisplayAny extends ExtDynamicElement {
 					return NSKeyValueCodingAdditions.Utility.valueForKeyPath(binding, keyPath);
 				}
 				if(keyPath.charAt(0) == '.') {
+					if(refObject instanceof String) {
+						try {
+							Object tmp = page
+									.valueForKeyPath((String) refObject);
+							refObject = tmp;
+						} catch (UnknownKeyException e) {
+							;
+						}
+					}
 					if(keyPath.length() > 1)
-						return page.valueForKeyPath(objectPath + keyPath);
+						return NSKeyValueCodingAdditions.Utility.
+								valueForKeyPath(refObject, keyPath.substring(1));
 					else
-						return page.valueForKey(objectPath);
+						return refObject;
 				}
 			}
     		if (inPlist instanceof NSDictionary) { // invoke method described in dict
     			NSDictionary dict = (NSDictionary)inPlist;
-    			return evaluateDict(dict, objectPath, page);
+    			return evaluateDict(dict, refObject, page);
     		}
     		return inPlist;    		
     	}
