@@ -54,8 +54,8 @@ public class MutableFlags extends Flags implements Cloneable {
 		if(value != getFlag(reg)) {
 			int tmp = 1 << reg;
 			flags = flags + (value?tmp:(-tmp));
+			sync();
 		}
-		sync();
 	}
 	
 	public Flags immutableClone() {
