@@ -52,30 +52,36 @@ public class DisplayAny extends ExtDynamicElement {
 			while (enu.hasMoreElements()) {
 				String key = (String) enu.nextElement();
 				Object value = bindings.valueForKey(key);
+				WOAssociation as = null;
 				if(".".equals(value)) {
-					associations.takeValueForKey(valueBinding, key);
+					as = valueBinding;
+					//associations.takeValueForKey(valueBinding, key);
 				} else if((value instanceof String) && 
 						((String)value).charAt(0) == '\'') {
 					String keyPath = ((String)value).substring(1);
-					associations.takeValueForKey(
-							WOAssociation.associationWithValue(keyPath), key);
+					as = WOAssociation.associationWithValue(keyPath);
 				} else if((value instanceof String) && 
 						((String)value).charAt(0) == '.') {
-					String keyPath = valueBinding.keyPath() + value;
-					associations.takeValueForKey(
-							WOAssociation.associationWithKeyPath(keyPath), key);
+					if(valueBinding.isValueConstant()) {
+						Object bind = valueBinding.valueInComponent(null);
+						bind = NSKeyValueCodingAdditions.Utility.valueForKeyPath(bind,
+								((String)value).substring(1));
+						as = WOAssociation.associationWithValue(bind);
+					} else {
+						String keyPath = valueBinding.keyPath() + value;
+						as = WOAssociation.associationWithKeyPath(keyPath);
+					}
 				} else if((value instanceof String) && 
 						((String)value).charAt(0) == '$') {
 					String keyPath = ((String)value).substring(1);
-					associations.takeValueForKey(
-							WOAssociation.associationWithKeyPath(keyPath), key);
+					as = WOAssociation.associationWithKeyPath(keyPath);
 				} else if((value instanceof String) && 
 						((String)value).charAt(0) == '^') {
-					associations.takeValueForKey(
-							WOAssociation.associationWithKeyPath((String)value), key);
+					as = WOAssociation.associationWithKeyPath((String)value);
 				} else {
-					associations.takeValueForKey(WOAssociation.associationWithValue(value), key);
+					as = WOAssociation.associationWithValue(value);
 				}
+				associations.takeValueForKey(as, key);
 			}
 		}
 		return associations;

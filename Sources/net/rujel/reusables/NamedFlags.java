@@ -239,8 +239,8 @@ public class NamedFlags extends MutableFlags implements NSKeyValueCoding,Cloneab
 	public NamedFlags xor(Number otherFlags) {
 		return xor(otherFlags.intValue());
 	}
-	
+/*	
 	public String toString() {
 		return super.toString() + ' ' + numerator.toString();
-	}
+	}*/
 }

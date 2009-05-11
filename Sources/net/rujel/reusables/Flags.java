@@ -141,9 +141,18 @@ public class Flags extends Number implements Cloneable{
 	public Flags xor(Number otherFlags) {
 		return xor(otherFlags.intValue());
 	}
-	
+
 	public String toString() {
-		return this.getClass().getName() + " : " + flags;
+		StringBuilder result = new StringBuilder(8);
+		int tmp = flags;
+		do {
+			for (int reg = 0; reg < 8; reg++) {
+				result.append(((tmp & 1) == 1) ? 'V' : '-');
+				tmp = tmp >>> 1;
+			}
+			result.append('.');
+		} while (tmp > 0);
+		return result.toString();//this.getClass().getName() + " : " + flags;
 	}
-	
+
 }
