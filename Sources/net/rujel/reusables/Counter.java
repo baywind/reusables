@@ -31,9 +31,9 @@ package net.rujel.reusables;
 
 import com.webobjects.foundation.NSKeyValueCoding;
 
-public class Counter implements NSKeyValueCoding {
+public class Counter implements NSKeyValueCoding, Cloneable, Comparable {
 	
-	int counter = 0;
+	protected int counter = 0;
 	
 	public Counter () {
 		super();
@@ -42,6 +42,11 @@ public class Counter implements NSKeyValueCoding {
 	public Counter (int value) {
 		super();
 		counter = value;
+	}
+
+	public Counter (Number value) {
+		super();
+		counter = value.intValue();
 	}
 
 	public void takeValueForKey(Object value, String key) {
@@ -59,7 +64,11 @@ public class Counter implements NSKeyValueCoding {
 	public int value() {
 		return counter;
 	}
-	
+
+	public void setValue(Number value) {
+		counter = value.intValue();
+	}
+
 	public void setValue(int value) {
 		counter = value;
 	}
@@ -74,17 +83,54 @@ public class Counter implements NSKeyValueCoding {
 		return counter;
 	}
 	
-	public void setAdd(int toAdd) {
+	public void setAdd(Number toAdd) {
+		add(toAdd.intValue());
+	}
+	
+	public void add(int toAdd) {
 		counter = counter + toAdd;
 	}
 	
-	public void setSubstract(int toSubstract) {
+	public void setSubstract(Number toSubstract) {
+		substract(toSubstract.intValue());
+	}
+
+	public void substract(int toSubstract) {
 		counter = counter - toSubstract;
 	}
-	
+
 	public int nullify() {
 		int value = counter;
 		counter = 0;
 		return value;
+	}
+
+	public int intValue() {
+		return counter;
+	}
+/*
+	public double doubleValue() {
+		return (double)counter;
+	}
+
+	public float floatValue() {
+		return (float)counter;
+	}
+
+	public long longValue() {
+		return (long)counter;
+	}*/
+	
+	public Counter clone() {
+		return new Counter(counter);
+	}
+
+	public int compareTo(Object arg0) {
+		int compare = 0;
+		if(arg0 instanceof Counter)
+			compare = ((Counter)arg0).counter;
+		else
+			compare = ((Number)arg0).intValue();
+		return counter - compare;
 	}
 }
