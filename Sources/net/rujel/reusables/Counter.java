@@ -121,6 +121,15 @@ public class Counter implements NSKeyValueCoding, Cloneable, Comparable {
 		return (long)counter;
 	}*/
 	
+	public boolean equals(Object arg) {
+		if(arg instanceof Counter)
+			return (counter == ((Counter)arg).counter);
+		else if(arg instanceof Number)
+			return (counter == ((Number)arg).intValue());
+		else
+			return false;
+	}
+	
 	public Counter clone() {
 		return new Counter(counter);
 	}
@@ -132,5 +141,9 @@ public class Counter implements NSKeyValueCoding, Cloneable, Comparable {
 		else
 			compare = ((Number)arg0).intValue();
 		return counter - compare;
+	}
+	
+	public String toString() {
+		return String.valueOf(counter);
 	}
 }
