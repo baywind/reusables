@@ -137,6 +137,23 @@ public class WOLogFormatter extends Formatter {
 		}
 		return toAppend;
 	}
+	
+	public static StringBuffer formatEOGID(EOGlobalID gid,StringBuffer toAppend) {
+		if (gid instanceof EOKeyGlobalID) {
+			EOKeyGlobalID kGid = (EOKeyGlobalID) gid;
+			toAppend.append(kGid.entityName()).append(':');
+			Object[] keys = kGid.keyValues();
+			for (int i = 0; i < keys.length; i++) {
+				if(i > 0)
+					toAppend.append('-');
+				toAppend.append(keys[i]);
+			}
+		} else {
+			toAppend.append("new");
+		}
+		return toAppend;
+	}
+	
 	protected StringBuffer formatDictionary(NSDictionary dict, StringBuffer buf) {
 		Enumeration den = dict.keyEnumerator();
 		Object key = null;
@@ -180,6 +197,7 @@ public class WOLogFormatter extends Formatter {
 	public String format(LogRecord record) {
 		WOSession ses = null;
 		EOEnterpriseObject eo = null;
+		EOGlobalID gid = null;
 		Throwable t = record.getThrown();
 		NSMutableArray otherObjects = new NSMutableArray();
 		
@@ -188,12 +206,14 @@ public class WOLogFormatter extends Formatter {
 			for (int i = 0; i < param.length; i++) {
 				if(param[i] instanceof WOSession) {
 					ses = (WOSession)param[i];
-				} else if (param[i] instanceof EOEnterpriseObject) {
+				} else if (param[i] instanceof EOEnterpriseObject && eo == null) {
 					eo = (EOEnterpriseObject)param[i];
 					if(ses == null && eo.editingContext() instanceof SessionedEditingContext) {
 						ses = ((SessionedEditingContext)eo.editingContext()).session();
 					}
-				} else if(param[i] instanceof Throwable) {
+				} else if(param[i] instanceof EOGlobalID && gid == null) {
+					gid = (EOGlobalID)param[i];
+				} else if(param[i] instanceof Throwable && t == null) {
 					t = (Throwable)param[i];
 				} else if(param[i] instanceof NSDictionary) {
 					NSMutableDictionary tmp = ((NSDictionary)param[i]).mutableClone();
@@ -226,6 +246,14 @@ public class WOLogFormatter extends Formatter {
 		if(eo != null) {
 			result.append('\t').append('<');
 			formatEO(eo,result).append('>');
+		}
+		if(gid != null) {
+			if(eo == null) {
+				result.append('\t').append('<');
+				formatEOGID(gid,result).append('>');
+			} else {
+				otherObjects.addObject(gid);
+			}
 		}
 		if(t != null) {
 			result.append('\n');
