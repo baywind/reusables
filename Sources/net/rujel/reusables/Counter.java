@@ -31,7 +31,7 @@ package net.rujel.reusables;
 
 import com.webobjects.foundation.NSKeyValueCoding;
 
-public class Counter implements NSKeyValueCoding, Cloneable, Comparable {
+public class Counter extends Number implements NSKeyValueCoding, Cloneable, Comparable {
 	
 	protected int counter = 0;
 	
@@ -108,7 +108,7 @@ public class Counter implements NSKeyValueCoding, Cloneable, Comparable {
 	public int intValue() {
 		return counter;
 	}
-/*
+
 	public double doubleValue() {
 		return (double)counter;
 	}
@@ -119,12 +119,10 @@ public class Counter implements NSKeyValueCoding, Cloneable, Comparable {
 
 	public long longValue() {
 		return (long)counter;
-	}*/
+	}
 	
 	public boolean equals(Object arg) {
-		if(arg instanceof Counter)
-			return (counter == ((Counter)arg).counter);
-		else if(arg instanceof Number)
+		if(arg instanceof Number)
 			return (counter == ((Number)arg).intValue());
 		else
 			return false;
@@ -135,11 +133,7 @@ public class Counter implements NSKeyValueCoding, Cloneable, Comparable {
 	}
 
 	public int compareTo(Object arg0) {
-		int compare = 0;
-		if(arg0 instanceof Counter)
-			compare = ((Counter)arg0).counter;
-		else
-			compare = ((Number)arg0).intValue();
+		int compare = ((Number)arg0).intValue();
 		return counter - compare;
 	}
 	
