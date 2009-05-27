@@ -40,7 +40,6 @@ public class DisplayAny extends ExtDynamicElement {
 
 	public DisplayAny(String name, NSDictionary associations, WOElement template) {
 		super(name, associations, template);
-		
 		checkRequired(associations, "value");
 	}
 	
@@ -195,7 +194,8 @@ public class DisplayAny extends ExtDynamicElement {
     public static class ValueReader implements NSKeyValueCodingAdditions {
     	protected WOComponent page;
 
-    	public static Object evaluateDict(NSDictionary dict, Object refObject, WOComponent page) {
+    	public static Object evaluateDict(NSDictionary dict, 
+    			Object refObject, WOComponent page) {
 			Object tmp = dict.valueForKey("methodName");
 			if(tmp == null)
 				return dict;
@@ -363,10 +363,12 @@ public class DisplayAny extends ExtDynamicElement {
     				obj.getClass().getName() + " to required type" + cl.getName());
     	}
     	
-    	public static void clearResultCache(NSMutableDictionary dict, Object onObject, boolean recursive) {
+    	public static void clearResultCache(NSMutableDictionary dict, 
+    			Object onObject, boolean recursive) {
     		if(dict == null || dict.count() == 0)
     			return;
-    		NSMutableDictionary resultCache = (NSMutableDictionary)dict.valueForKey("resultCache");
+    		NSMutableDictionary resultCache = (NSMutableDictionary)dict.valueForKey(
+    				"resultCache");
     		if(resultCache != null) {
     			if(onObject == null)
     				dict.removeObjectForKey("resultCache");
@@ -425,7 +427,7 @@ public class DisplayAny extends ExtDynamicElement {
 							;
 						}
 					}
-					if(keyPath.length() > 1)
+					if(keyPath.length() > 1 && refObject != null)
 						return NSKeyValueCodingAdditions.Utility.
 								valueForKeyPath(refObject, keyPath.substring(1));
 					else
