@@ -283,11 +283,15 @@ public class DisplayAny extends ExtDynamicElement {
 					if(tmp == null)
 						return result;
 					if(resultCache != null) {
-						resultCache.setObjectForKey(result, tmp);
-					} else {
-						resultCache = new NSMutableDictionary(result, tmp);
+						if(result == null)
+							resultCache.removeObjectForKey(tmp);
+						else
+							resultCache.setObjectForKey(result, tmp);
+					} else if(result != null) {
+						resultCache = new NSMutableDictionary();
 						dict.takeValueForKey(resultCache, "resultCache");
 					}
+
 				}
 				return result;
 			} catch (Exception e) {
