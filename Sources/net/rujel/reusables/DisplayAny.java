@@ -40,7 +40,7 @@ public class DisplayAny extends ExtDynamicElement {
 
 	public DisplayAny(String name, NSDictionary associations, WOElement template) {
 		super(name, associations, template);
-		checkRequired(associations, "value");
+//		checkRequired(associations, "value");
 	}
 	
 	protected NSMutableDictionary associationsFromBindingsDict(NSDictionary bindings) {
@@ -76,7 +76,21 @@ public class DisplayAny extends ExtDynamicElement {
 					as = WOAssociation.associationWithKeyPath(keyPath);
 				} else if((value instanceof String) && 
 						((String)value).charAt(0) == '^') {
-					as = WOAssociation.associationWithKeyPath((String)value);
+					String keyPath = ((String)value).substring(1);
+					int idx = keyPath.indexOf('.'); 
+					if(idx > 0) {
+						as = (WOAssociation)bindingsDict.valueForKey(keyPath.substring(0,idx));
+						keyPath = keyPath.substring(idx);
+						if(as.isValueConstant()) {
+							Object bind = as.valueInComponent(null);
+							bind = NSKeyValueCodingAdditions.Utility.valueForKeyPath(bind,
+									keyPath.substring(1));
+							as = WOAssociation.associationWithValue(bind);
+						} else {
+							as = WOAssociation.associationWithKeyPath(as.keyPath() + keyPath);
+						}
+					} else
+						as = (WOAssociation)bindingsDict.valueForKey(keyPath);
 				} else {
 					as = WOAssociation.associationWithValue(value);
 				}
@@ -175,6 +189,28 @@ public class DisplayAny extends ExtDynamicElement {
 	public WOActionResults invokeAction(WORequest aRequest, WOContext aContext) {
 		NSDictionary dict = (NSDictionary)valueForBinding("dict", aContext);
 		if(dict != null && Various.boolForObject(dict.valueForKey("invokeAction"))) {
+			String pageName = (String)dict.valueForKey("nextPage");
+			if(pageName != null && aContext.senderID().equals(aContext.elementID())) {
+				WOComponent nextPage = WOApplication.application().pageWithName(pageName, aContext);
+				NSDictionary pageParams = (NSDictionary)dict.valueForKey("pageParams");
+				if(pageParams == null || pageParams.count() == 0)
+					return nextPage;
+				Enumeration enu = pageParams.keyEnumerator();
+				while (enu.hasMoreElements()) {
+					String key = (String)enu.nextElement();
+					Object param = pageParams.valueForKey(key);
+					if(param instanceof String) {
+						String str = (String)param;
+						if(str.charAt(0) == '^')
+							param = valueForBinding(str.substring(1), aContext);
+						else
+							param = ValueReader.evaluateValue(param,
+									valueForBinding("value", aContext), aContext.page());
+					}
+					nextPage.takeValueForKey(param, key);
+				}
+				return nextPage;
+			}
 			WOElement presenter = getPresenter(dict);
 			WOActionResults result = presenter.invokeAction(aRequest, aContext);
 			return result;
@@ -418,7 +454,7 @@ public class DisplayAny extends ExtDynamicElement {
 					if(idx < 0)
 						return page.valueForBinding(keyPath);
 					Object binding = page.valueForBinding(keyPath.substring(0,idx));
-					keyPath = keyPath.substring(idx);
+					keyPath = keyPath.substring(idx +1);
 					return NSKeyValueCodingAdditions.Utility.valueForKeyPath(binding, keyPath);
 				}
 				if(keyPath.charAt(0) == '.') {
