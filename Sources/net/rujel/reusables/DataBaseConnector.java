@@ -70,7 +70,8 @@ public class DataBaseConnector {
 		String urlSuffix = dbSettings.get("urlSuffix",null);
 		
 		NSMutableDictionary connectionDictionary = connectionDictionaryFromSettings(dbSettings, null);
-		
+		EOEditingContext ec = new EOEditingContext();
+		ec.lock();
 		while (models.hasMoreElements()) {
 			EOModel model = (EOModel) models.nextElement();
 			SettingsReader currSettings = dbSettings.subreaderForPath(model.name(), false);
@@ -119,7 +120,7 @@ public class DataBaseConnector {
 				cd.takeValueForKey(url, "URL");
 			if(cd.count() > 0) {
 				try {
-					EODatabaseContext.forceConnectionWithModel(model, cd, new EOEditingContext());
+					EODatabaseContext.forceConnectionWithModel(model, cd, ec);
 					String message = "Model '" + model.name() + "' connected to database";
 					if(url != null)
 						message = message + '\n' + url;
@@ -132,5 +133,6 @@ public class DataBaseConnector {
 				}
 			}
 		} // while (models.hasMoreElements())
+		ec.unlock();
 	}
 }
