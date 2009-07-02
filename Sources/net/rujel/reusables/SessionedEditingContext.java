@@ -38,13 +38,15 @@ public class SessionedEditingContext extends EOEditingContext {
 	protected Counter failures = new Counter();
 	
 	public SessionedEditingContext (WOSession ses){
-		super();
+			super((ses.objectForKey("objectStore")!=null)?
+					(EOObjectStore)ses.objectForKey("objectStore"):
+						EOObjectStoreCoordinator.defaultCoordinator());
 		if (ses == null) throw new 
 			NullPointerException ("You should define a session to instantiate SessionedEditingContext");
 		session = ses;
 	}
 	
-	public SessionedEditingContext (EOEditingContext parent,WOSession ses){
+	public SessionedEditingContext (EOObjectStore parent,WOSession ses){
 		super(parent);
 		if (ses == null) throw new 
 			NullPointerException ("You should define a session to instantiate SessionedEditingContext");
