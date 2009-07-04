@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import java.util.logging.Level;
 import java.util.*;
 
+@Deprecated
 public class Scheduler {
 	protected static Logger logger = Logger.getLogger("sheduler");
 	//protected static final Preferences prefs = Preferences.systemNodeForPackage(Scheduler.class);
