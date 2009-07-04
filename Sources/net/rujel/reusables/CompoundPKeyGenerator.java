@@ -88,7 +88,15 @@ public class CompoundPKeyGenerator {
 		}
 		boolean error = false;
 		for (int i = 0; i < values.length; i++) {
-			if(values[i] == null) {
+			if(values[i] != null)
+				continue;
+			String key = (String)pKeys.objectAtIndex(i);
+			try {
+				values[i] = eo.valueForKey(key);
+			} catch (Exception e) {
+				;
+			}
+			if (values[i] == null) {
 				values[i] = NSKeyValueCoding.NullValue;
 				error = true;
 			}
