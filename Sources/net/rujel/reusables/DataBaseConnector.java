@@ -61,17 +61,17 @@ public class DataBaseConnector {
 		return dict;
 	}
 
-	public static void makeConnections() {
-		makeConnections(null,null);
+	public static boolean makeConnections() {
+		return makeConnections(null,null);
 	}
 	
-	public static void makeConnections(EOObjectStore os, String tag) {
+	public static boolean makeConnections(EOObjectStore os, String tag) {
 		Logger logger = Logger.getLogger("rujel.dbConnection");
 		SettingsReader dbSettings = SettingsReader.settingsForPath("dbConnection", false);
 		if(dbSettings == null) {
 			logger.log(WOLogLevel.CONFIG,
 					"No database connection settings found. Using predefined connections.");
-			return;
+			return false;
 		}
 		EOModelGroup mg = EOModelGroup.defaultGroup();
 		Enumeration models = mg.models().immutableClone().objectEnumerator();
@@ -80,6 +80,7 @@ public class DataBaseConnector {
 		boolean onlyHostname = !serverURL.startsWith("jdbc");
 		String urlSuffix = dbSettings.get("urlSuffix",null);
 		
+		boolean success = true;
 		NSMutableDictionary connDict = connectionDictionaryFromSettings(dbSettings, null);
 		EOEditingContext ec = (os != null)?new EOEditingContext(os):new EOEditingContext();
 		while (models.hasMoreElements()) {
@@ -146,8 +147,10 @@ public class DataBaseConnector {
 					if(url != null)
 						message = message + '\n' + url;
 					logger.log(WOLogLevel.WARNING, message, e);
+					success = false;
 					if(url != null) {
-						String untagged = currSettings.get("untagged", null);
+						String untagged = (currSettings==null)?null:
+							currSettings.get("untagged", null);
 						if(untagged != null) {
 							url = url.replaceFirst(dbName, untagged);
 							cd.takeValueForKey(url, "URL");
@@ -156,6 +159,7 @@ public class DataBaseConnector {
 								message = "Model '" + model.name() +
 									"' connected to untagged database" + '\n' + url;
 								logger.config(message);
+								success = true;
 							} catch (Exception ex) {
 								message = "Model '" + model.name() + 
 									"' also could not connect to database" + '\n' + url;
@@ -168,20 +172,22 @@ public class DataBaseConnector {
 				}
 			}
 		} // while (models.hasMoreElements())
-		if(tag != null && os != null) {
+		if(success && tag != null && os != null) {
 			if(coordinatorsByTag == null)
 				coordinatorsByTag = new NSMutableDictionary(os,tag);
 			else
 				coordinatorsByTag.takeValueForKey(os, tag);
 		}
 		ec.dispose();
+		return success;
 	}
 	
 	public static EOObjectStore objectStoreForTag(String tag) {
 		EOObjectStore os = (EOObjectStore)coordinatorsByTag.valueForKey(tag);
 		if(os == null) {
 			os = new EOObjectStoreCoordinator();
-			makeConnections(os, tag);
+			if(!makeConnections(os, tag))
+				return null;
 		}
 		return os;
 	}
