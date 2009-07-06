@@ -56,7 +56,8 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 			String name = (String)enu.nextElement();
 			if(list.getBoolean(name,false)) {
 				try {
-					mods.addObject(Class.forName(name).getMethod("init",Object.class,WOContext.class));
+					Class cl = Class.forName(name);
+					mods.addObject(cl.getMethod("init",Object.class,WOContext.class));
 				} catch (Exception ex) {
 					logger.logp(Level.WARNING,"ModulesInitialiser","readModules","Could not get 'init' method for module " + name,ex);
 				}
