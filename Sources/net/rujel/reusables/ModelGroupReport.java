@@ -90,10 +90,15 @@ public class ModelGroupReport extends com.webobjects.appserver.WOComponent {
     		return null;
     	boolean hidden = false;
 //    	String className = entity.className();
-    	if(prop == null)
+    	if(prop == null) {
     		hidden = entity.className().endsWith("EOGenericRecord");
-    	else
-    		hidden = !entity.classProperties().contains(prop);
+    	} else {
+    		try {
+				hidden = !entity.classProperties().contains(prop);
+			} catch (RuntimeException e) {
+				return "font-style:italic;color:#ff9999;";
+			}
+    	}
     	if(hidden)
     		return "color:#999999;";
     	return null;
