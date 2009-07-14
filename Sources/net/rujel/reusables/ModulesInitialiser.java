@@ -132,7 +132,7 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 	
 	public static NSArray useModules(WOContext ctx,Object param) {
 		if(modules == null) return null;
-		WOSession ses = (ctx.hasSession())?ctx.session():null;
+		WOSession ses = (ctx != null && ctx.hasSession())?ctx.session():null;
 		NSMutableArray result = new NSMutableArray();
 		for (int i = 0; i < modules.length; i++) {
 			if(modules[i] != null) {

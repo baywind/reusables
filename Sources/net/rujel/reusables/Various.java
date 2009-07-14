@@ -87,6 +87,10 @@ public class Various {
 			return "IX";
 		case 10:
 			return "X";
+		case 11:
+			return "XI";
+		case 12:
+			return "XII";
 		default:
 			return Integer.toString(value);
 		}

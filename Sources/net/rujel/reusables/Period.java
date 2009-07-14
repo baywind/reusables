@@ -34,20 +34,14 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 public interface Period {
-	
-	public String typeID();
 
 	public Date begin();
 	
 	public Date end();
 	
-	public int countInYear();
-	
 	public boolean contains(Date date);/* {
 		return (date.compareTo(begin()) >= 0 && date.compareTo(end()) <= 0);
 	}*/
-	
-	public Period nextPeriod();
 	
 	//Implementations
 	
@@ -71,8 +65,11 @@ public interface Period {
 		public Date end() {
 			return end;
 		}
+		public static  boolean periodContains(Period period, Date date) {
+			return (date.compareTo(period.begin()) >= 0 && date.compareTo(period.end()) <= 0);
+		}
 		public boolean contains(Date date) {
-			return (date.compareTo(begin()) >= 0 && date.compareTo(end()) <= 0);
+			return periodContains(this, date);
 		}
 		
 		public int countInYear() {
