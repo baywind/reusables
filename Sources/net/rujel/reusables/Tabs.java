@@ -51,59 +51,6 @@ public class Tabs extends WOComponent {
     public Tabs(WOContext context) {
         super(context);
     }
-	/*
-	public void appendToResponse(WOResponse aResponse, WOContext aContext) {
-//		source = (NSArray)valueForBinding("source");
-		sync();
-		if (currTab == null && tablist != null)
-			currTab = (BaseTab)tablist.lastObject();
-		if(currTab != null) {
-			EduLesson lesson = (EduLesson)valueForBinding("currLesson");
-			if(lesson != null && !currTab.containsLesson(lesson)) {
-				int lesNum = lesson.number().intValue();
-				int currNum = tablist.indexOfObject(currTab);
-				if(lesNum < currTab.startIndex()) {
-					while (currNum >= 0 && lesNum < currTab.startIndex()) {
-						currNum--;
-						currTab = (BaseTab)tablist.objectAtIndex(currNum);
-					}
-				} else {
-					while (currNum < (tablist.count() - 1) && !currTab.lessonsInTab().containsObject(lesson)) {
-						currNum++;
-						currTab = (BaseTab)tablist.objectAtIndex(currNum);
-					}
-				}
-				setValueForBinding(currTab,"currTab");
-			}
-		}
-			
-		//
-		if(currNum < 0) {
-			//currTab = tabList.lastObject();
-			currNum = tabList.count() - 1;
-			currTab = (LessonTab)tabList.objectAtIndex(currNum);
-		}
-		EduLesson lesson = (EduLesson)valueForBinding("currLesson");
-		if (lesson != null) {
-			int lesNum = source.indexOfObject(lesson);
-			if (lesNum >=0 && !currTab.lessonsInTab().containsObject(lesson)) {
-				if(lesNum < currTab.startIndex()) {
-					while (currNum >= 0 && lesNum < currTab.startIndex()) {
-						currNum--;
-						currTab = (LessonTab)tabList.objectAtIndex(currNum);
-					}
-				} else {
-					while (currNum < tabList.count() && !currTab.lessonsInTab().containsObject(lesson)) {
-						currNum++;
-						currTab = (LessonTab)tabList.objectAtIndex(currNum);
-					}
-				}
-			}
-		}
-		
-		super.appendToResponse(aResponse,aContext);
-	}
-	*/
 	
 	private Object[] _attribs;
     public Number index;
@@ -174,23 +121,48 @@ public class Tabs extends WOComponent {
 		return tablist.indexOfObject(tabValue);
 	}
 
-	public void selectTab() {
+	public WOActionResults selectTab() {
+		Object currTab = valueForBinding("currTab");
+		if(currTab instanceof WOComponent) {
+			if(tabItem == null)
+				return null;
+			if(tabItem instanceof WOActionResults)
+				return (WOActionResults)tabItem;
+			try {
+				String pageName = (String)NSKeyValueCoding.Utility.valueForKey(
+						tabItem, "page");
+				WOComponent page = (WOComponent)currTab;
+				if(page.name().endsWith(pageName))
+					return page;
+				page = pageWithName(pageName);
+				pageName = (String)valueForBinding("pushValues");
+				String[] values = pageName.split(";");
+				for (int i = 0; i < values.length; i++) {
+					Object val = NSKeyValueCoding.Utility.valueForKey(currTab, values[i]);
+					page.takeValueForKey(val, values[i]);
+				}
+				return page;
+			} catch (Exception e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
 		if(Various.boolForObject(valueForBinding("numeric"))) {
 			if(index == null) {
 				setValueForBinding(null,"currTab");
-				return;
+				return null;
 			}
-			if(index.equals(valueForBinding("currTab")))
+			if(index.equals(currTab))
 				setValueForBinding(null,"currTab");
 			setValueForBinding(index,"currTab");
 		} else {
-
-			if(tabItem.equals(valueForBinding("currTab")))
+			if(tabItem == currTab)
 				setValueForBinding(null,"currTab");
 			//currTab = tabItem;
 			setValueForBinding(tabItem,"currTab");
 		}
 //		tablist=(NSArray)valueForBinding("tablist");
+		return (WOActionResults)valueForBinding("selectAction");
 	}
 	
 	public String tabStyle() {
@@ -200,6 +172,14 @@ public class Tabs extends WOComponent {
 			if(index.equals(currTab)) return "selection";
 		} else {
 			String idAttribute = (String)valueForBinding("idAttribute");
+			if(idAttribute == null && currTab instanceof WOComponent) {
+				idAttribute = ((WOComponent)currTab).name();
+				int idx = idAttribute.lastIndexOf('.');
+				if(idx > 0)
+					idAttribute = idAttribute.substring(idx +1);
+				currTab = idAttribute;
+				idAttribute = "page";
+			}
 			if(idAttribute != null) {
 				try {
 					Object recent = NSKeyValueCoding.Utility.valueForKey(
@@ -241,17 +221,7 @@ public class Tabs extends WOComponent {
 	public boolean synchronizesVariablesWithBindings() {
         return false;
 	}
-	/*
-	public WOElement template() {
-		sync();
-		return super.template();
-	}
-	
-	public void sync() {
-		tablist = (NSArray)valueForBinding("tablist");
-		currTab = (BaseTab)valueForBinding("currTab");
-	}
-	*/
+
 	public void reset() {
 		_attribs = null;
 	}
