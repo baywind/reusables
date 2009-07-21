@@ -47,6 +47,8 @@ public class OnClickContainer extends ExtDynamicElement {
 	}
 
 	public void appendToResponse(WOResponse aResponse, WOContext aContext) {
+		if(Various.boolForObject(valueForBinding("hide", aContext)))
+			return;
     	NSMutableArray bindingsList = bindingKeys().mutableClone();
     	String tagName = (String)valueForBinding("elementName",aContext);
     	bindingsList.removeObject("elementName");
@@ -67,8 +69,17 @@ public class OnClickContainer extends ExtDynamicElement {
     	aResponse.appendContentCharacter('<');
     	aResponse.appendContentString(tagName);
     	if(!disabled) {
-    		aResponse.appendContentString(
-    			" onmouseover=\"dim(this);\" onmouseout=\"unDim(this)\" onclick=\"");
+    		String point = (String)valueForBinding("parent", aContext);
+    		if(point == null) {
+    			point = "this";
+    		} else {
+    			point = "get(this,'" + point + "')";
+    		}
+    		aResponse.appendContentString(" onmouseover=\"dim(");
+			aResponse.appendContentString(point);
+    		aResponse.appendContentString(");\" onmouseout=\"unDim(");
+			aResponse.appendContentString(point);
+    		aResponse.appendContentString(");\" onclick=\"");
     		aResponse.appendContentString(onclick);
 			aResponse.appendContentCharacter('"');
     	}
