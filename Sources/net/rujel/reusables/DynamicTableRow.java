@@ -68,13 +68,20 @@ public class DynamicTableRow extends WOComponent {
 			return ((index+1)%2==0);
 		}
 	}
+	
+	public String elementName() {
+		String result = (String)valueForBinding("elementName");
+		if(result == null)
+			result = "tr";
+		return result;
+	}
 
 	public boolean synchronizesVariablesWithBindings() {
 		return false;
 	}
 
 	public String color() {
-		if(Boolean.TRUE.equals(valueForBinding("useStyles")))
+		if(Various.boolForObject((valueForBinding("useStyles"))))
 			return null;
 		Object color;
 		if (valueForBinding("item").equals(valueForBinding("selection"))) {
@@ -92,7 +99,7 @@ public class DynamicTableRow extends WOComponent {
 	}
 
 	public String style() {
-		if(!Boolean.TRUE.equals(valueForBinding("useStyles")))
+		if(!Various.boolForObject(valueForBinding("useStyles")))
 			return null;
 		String result = (isGerade())?"gerade":"ungerade";
 		if ((hasBinding("isSelected"))?Various.boolForObject(valueForBinding("isSelected")):
