@@ -37,12 +37,13 @@ public class StringStorage implements NSKeyValueCodingAdditions {
 	}
 	
 	public Object valueForKey(String key) {
-		if(key.equals("@localisationFolder"))
+		boolean str = (key.charAt(0) == '@');
+		if(str && key.equals("@localisationFolder"))
 			return folder;
 		NSDictionary dict = (NSDictionary)_strings.valueForKey(key);
 		if(dict != null)
 			return dict;
-		String res = key + ".plist";
+		String res = (str)?key.substring(1):key + ".plist";
 		NSData data = null;
 		if(folder != null) {
 			if(res.indexOf('_') < 0)
@@ -51,6 +52,8 @@ public class StringStorage implements NSKeyValueCodingAdditions {
 			if(file.exists()) {
 				try {
 					InputStream stream = new FileInputStream(file);
+					if(str)
+						return stream;
 					data = new NSData(stream,(int)file.length());
 				} catch (IOException e) {
 					Logger.getLogger("rujel.reusables").log(WOLogLevel.WARNING,
@@ -59,13 +62,15 @@ public class StringStorage implements NSKeyValueCodingAdditions {
 			}
 		} else if (resourceManager != null) {
 			String frw = null;
-			int idx = key.indexOf('-');
+			int idx = res.indexOf('-');
 			if (idx < 0)
-				idx = key.indexOf('_');
+				idx = res.indexOf('_');
 			if (idx > 0) {
-				frw = key.substring(0, idx);
+				frw = res.substring(0, idx);
 				res = res.substring(idx + 1);
 			}
+			if(str)
+				return resourceManager.inputStreamForResourceNamed(res, frw, null);
 			byte[] bytes = resourceManager.bytesForResourceNamed(res, frw, null);
 			data = new NSData(bytes);
 		}
@@ -78,6 +83,11 @@ public class StringStorage implements NSKeyValueCodingAdditions {
 				dict = appStringStorage.valueForKey(key);
 			_strings.setObjectForKey(dict,key);
 			return dict;*/
+		} else if(str) {
+			if(parent == null)
+				return appStringStorage.valueForKey(key);
+			else
+				return parent.valueForKey(key);
 		}
 		if(dict == null) {
 			dict = NSDictionary.EmptyDictionary;
@@ -103,6 +113,8 @@ public class StringStorage implements NSKeyValueCodingAdditions {
 	}
 
 	public Object valueForKeyPath(String keyPath) {
+		if(keyPath.charAt(0) == '@')
+			return valueForKey(keyPath);
 		int idx = keyPath.indexOf('.');
 		if(idx < 0)
 			return valueForKey(keyPath);
