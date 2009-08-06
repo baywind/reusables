@@ -33,6 +33,7 @@ import com.webobjects.eocontrol.EOSortOrdering;
 import com.webobjects.foundation.NSComparator;
 
 public class AdaptingComparator extends NSComparator {
+	public static final AdaptingComparator sharedInstance = new AdaptingComparator();
 	
 	protected Class sortingClass;
 	protected EOSortOrdering.ComparisonSupport support;
