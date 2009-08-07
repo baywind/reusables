@@ -111,6 +111,8 @@ public class DataBaseConnector {
 					StringBuffer buf = new StringBuffer(serverURL);
 					if (onlyHostname)
 						buf.insert(0, urlFromModel.substring(0, index));
+					if(buf.charAt(buf.length() -1) == '/')
+						buf.deleteCharAt(buf.length() -1);
 					if(dbName == null) {
 						buf.append(urlFromModel.substring(index + 9));
 					} else {
