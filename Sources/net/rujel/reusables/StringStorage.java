@@ -72,7 +72,8 @@ public class StringStorage implements NSKeyValueCodingAdditions {
 			if(str)
 				return resourceManager.inputStreamForResourceNamed(res, frw, null);
 			byte[] bytes = resourceManager.bytesForResourceNamed(res, frw, null);
-			data = new NSData(bytes);
+			if(bytes != null && bytes.length > 0)
+				data = new NSData(bytes);
 		}
 		if(data != null && data.length() > 0) {
 			dict = (NSDictionary)NSPropertyListSerialization
