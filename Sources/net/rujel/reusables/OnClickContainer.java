@@ -104,10 +104,14 @@ public class OnClickContainer extends ExtDynamicElement {
     	
      }
     
-    public WOActionResults invokeAction(WORequest aRequest, WOContext aContext) {
+/*    public WOActionResults invokeAction(WORequest aRequest, WOContext aContext) {
     	if(aContext.elementID().equals(aContext.senderID())) {
     		return (WOActionResults)valueForBinding("invokeAction",aContext);
     	}
     	return super.invokeAction(aRequest, aContext);
-    }
+    }*/
+	
+	protected WOActionResults action(WOContext aContext) {
+		return (WOActionResults)valueForBinding("invokeAction",aContext);
+	}
 }

@@ -49,9 +49,15 @@ public class ExtDynamicElement extends WODynamicElement {
 	}
 	
 	public WOActionResults invokeAction(WORequest aRequest, WOContext aContext) {
+    	if(aContext.elementID().equals(aContext.senderID()))
+    		return action(aContext);
 		if(children != null)
 			return children.invokeAction(aRequest, aContext);
 		return null;
+	}
+	
+	protected WOActionResults action(WOContext aContext) {
+		return aContext.page();
 	}
 	
 	public void takeValuesFromRequest(WORequest aRequest, WOContext aContext) {
