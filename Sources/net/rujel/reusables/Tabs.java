@@ -62,7 +62,8 @@ public class Tabs extends WOComponent {
 			while(hasBinding(key)) {
 				String attr = (String)valueForBinding(key);
 				if(attr != null) {
-					attribs.addObject(((NSKeyValueCodingAdditions)tabItem).valueForKeyPath(attr));
+					attribs.addObject(NSKeyValueCodingAdditions.
+							Utility.valueForKeyPath(tabItem, attr));
 				} else {
 					attribs.addObject(NSKeyValueCoding.NullValue);
 				}
@@ -76,16 +77,21 @@ public class Tabs extends WOComponent {
 	
 	public String title() {
 		String attr = (String)valueForBinding("formatter");
-		if(attr != null && tabItem instanceof NSKeyValueCodingAdditions) {
+		if(attr != null) {
 			return String.format(attr,attribs());
 		}
 		
 		attr = (String)valueForBinding("titleAttribute");
 		if(attr != null && tabItem instanceof NSKeyValueCoding) {
-			if(attr.indexOf('.') > 0 && (tabItem instanceof NSKeyValueCodingAdditions))
-				return ((NSKeyValueCodingAdditions)tabItem).valueForKeyPath(attr).toString();
+			Object title = NSKeyValueCodingAdditions.Utility.valueForKeyPath(tabItem, attr);
+			if(title != null)
+				return title.toString();
 			else
-				return ((NSKeyValueCoding)tabItem).valueForKey(attr).toString();
+				return "-null-";
+//			if(attr.indexOf('.') > 0 && (tabItem instanceof NSKeyValueCodingAdditions))
+//				return ((NSKeyValueCodingAdditions)tabItem).valueForKeyPath(attr).toString();
+//			else
+//				return ((NSKeyValueCoding)tabItem).valueForKey(attr).toString();
 		}
 		if (tabItem instanceof GenericTab) {
 			GenericTab tab = (GenericTab) tabItem;
