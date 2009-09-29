@@ -1,17 +1,18 @@
 {
     attributes = (
         {
-            columnName = ""; 
+            columnName = boolean; 
             externalType = BIT; 
             internalInfo = {"_nameInObjectStore" = BOOLEAN; }; 
             name = boolean; 
+            userInfo = {"_EntityModeler" = {generateSource = NO; }; }; 
             valueClassName = NSNumber; 
             valueType = c; 
             width = 1; 
         }, 
         {
             allowsNull = Y; 
-            columnName = ""; 
+            columnName = decimal; 
             externalType = DECIMAL; 
             internalInfo = {"_nameInObjectStore" = DECIMAL; }; 
             name = decimal; 
@@ -22,7 +23,7 @@
         }, 
         {
             adaptorValueConversionMethodName = toBytes; 
-            columnName = ""; 
+            columnName = flags; 
             externalType = TINYINT; 
             factoryMethodArgumentType = EOFactoryMethodArgumentIsBytes; 
             internalInfo = {"_nameInObjectStore" = FLAGS; }; 
@@ -32,7 +33,7 @@
             valueFactoryMethodName = "makeFlags:"; 
         }, 
         {
-            columnName = ""; 
+            columnName = integer; 
             externalType = INTEGER; 
             name = integer; 
             valueClassName = NSNumber; 
@@ -40,7 +41,7 @@
         }, 
         {
             allowsNull = Y; 
-            columnName = ""; 
+            columnName = string; 
             externalType = VARCHAR; 
             internalInfo = {"_nameInObjectStore" = ""; }; 
             name = string; 
@@ -49,7 +50,7 @@
         }, 
         {
             allowsNull = Y; 
-            columnName = ""; 
+            columnName = text; 
             externalType = TEXT; 
             internalInfo = {"_nameInObjectStore" = ""; }; 
             name = text; 
@@ -57,7 +58,7 @@
             width = 65533; 
         }, 
         {
-            columnName = ""; 
+            columnName = timestamp; 
             externalType = TIMESTAMP; 
             internalInfo = {"_nameInObjectStore" = DATE; }; 
             name = timestamp; 
@@ -66,22 +67,23 @@
         }, 
         {
             allowsNull = Y; 
-            columnName = ""; 
+            columnName = anagram; 
             externalType = VARCHAR; 
             name = anagram; 
+            userInfo = {"_EntityModeler" = {generateSource = NO; }; }; 
             valueClassName = NSString; 
             width = 5; 
         }, 
         {
             allowsNull = Y; 
-            columnName = ""; 
+            columnName = byte; 
             externalType = TINYINT; 
             name = byte; 
             valueClassName = NSNumber; 
             valueType = i; 
         }, 
         {
-            columnName = ""; 
+            columnName = date; 
             externalType = DATE; 
             name = date; 
             serverTimeZone = "Europe/Moscow"; 
@@ -89,14 +91,14 @@
             valueType = D; 
         }, 
         {
-            columnName = ""; 
+            columnName = datetime; 
             externalType = DATETIME; 
             name = datetime; 
             serverTimeZone = "Europe/Moscow"; 
             valueClassName = NSCalendarDate; 
         }, 
         {
-            columnName = ""; 
+            columnName = "int_3"; 
             externalType = MEDIUMINT; 
             name = "int_3"; 
             valueClassName = NSNumber; 
@@ -104,21 +106,21 @@
         }, 
         {
             allowsNull = Y; 
-            columnName = ""; 
+            columnName = long; 
             externalType = BIGINT; 
             name = long; 
             valueClassName = NSNumber; 
             valueType = l; 
         }, 
         {
-            columnName = ""; 
+            columnName = short; 
             externalType = SMALLINT; 
             name = short; 
             valueClassName = NSNumber; 
             valueType = i; 
         }, 
         {
-            columnName = ""; 
+            columnName = time; 
             externalType = TIME; 
             name = time; 
             valueClassName = NSCalendarDate; 
@@ -126,7 +128,7 @@
         }, 
         {
             allowsNull = Y; 
-            columnName = ""; 
+            columnName = word; 
             externalType = VARCHAR; 
             name = word; 
             valueClassName = NSString; 
@@ -170,7 +172,8 @@
         text, 
         timestamp
     ); 
+    externalName = MySQL; 
     fetchSpecificationDictionary = {}; 
-    name = EOJDBCmysqlPrototypes; 
+    name = MySQL; 
     primaryKeyAttributes = ("int_3"); 
 }

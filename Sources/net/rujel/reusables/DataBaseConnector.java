@@ -74,7 +74,41 @@ public class DataBaseConnector {
 			return false;
 		}
 		EOModelGroup mg = EOModelGroup.defaultGroup();
-		Enumeration models = mg.models().immutableClone().objectEnumerator();
+		String prototypes = dbSettings.get("prototypes",null);
+		if(prototypes != null) {
+	        EOEntity jdbcPrototypesEntity = mg.entityNamed("EOJDBCPrototypes");
+	        EOEntity entity = mg.entityNamed(prototypes);
+			if(entity == null) {
+				NSDictionary plist = (NSDictionary)PlistReader.readPlist(prototypes, null);
+				if(plist != null) {
+					EOModel model = jdbcPrototypesEntity.model();
+					entity = new EOEntity(plist,model);
+					model.addEntity(entity);
+				}
+			}
+			if(entity != null) {
+				logger.log(WOLogLevel.CONFIG,"Using prototypes from " + prototypes);
+				Enumeration enu = jdbcPrototypesEntity.attributes().objectEnumerator();
+				while (enu.hasMoreElements()) {
+					EOAttribute jdbcPrototype =  (EOAttribute)enu.nextElement();
+					String prototypesName = (String)jdbcPrototype.name();
+					EOAttribute dbPrototype = 
+						(EOAttribute)entity.attributeNamed(prototypesName);
+					if (dbPrototype != null) {
+						jdbcPrototype.setDefinition(dbPrototype.definition());
+						jdbcPrototype.setExternalType(dbPrototype.externalType()); 
+						jdbcPrototype.setPrecision(dbPrototype.precision()); 
+						jdbcPrototype.setReadFormat(dbPrototype.readFormat()); 
+						jdbcPrototype.setScale(dbPrototype.scale()); 
+						jdbcPrototype.setUserInfo(dbPrototype.userInfo()); 
+						jdbcPrototype.setValueType(dbPrototype.valueType()); 
+						jdbcPrototype.setWidth(dbPrototype.width()); 
+						jdbcPrototype.setWriteFormat(dbPrototype.writeFormat());
+	                }
+				}
+			}
+		}
+		Enumeration enu = mg.models().immutableClone().objectEnumerator();
 		
 		String serverURL = dbSettings.get("serverURL",null);
 		boolean onlyHostname = !serverURL.startsWith("jdbc");
@@ -83,10 +117,18 @@ public class DataBaseConnector {
 		boolean success = true;
 		NSMutableDictionary connDict = connectionDictionaryFromSettings(dbSettings, null);
 		EOEditingContext ec = (os != null)?new EOEditingContext(os):new EOEditingContext();
-		while (models.hasMoreElements()) {
-			EOModel model = (EOModel) models.nextElement();
-			if(model.name().endsWith("Prototypes"))
+		while (enu.hasMoreElements()) {
+			EOModel model = (EOModel) enu.nextElement();
+			if(model.name().endsWith("Prototypes")) {
+				Enumeration ents = model.entityNames().immutableClone().objectEnumerator();
+				while (ents.hasMoreElements()) {
+					String entName = (String) ents.nextElement();
+					if(!entName.equals("EOJDBCPrototypes")) {
+						model.removeEntity(model.entityNamed(entName));
+					}
+ 				}
 				continue;
+			}
 			SettingsReader currSettings = dbSettings.subreaderForPath(model.name(), false);
 			if(currSettings != null && currSettings.getBoolean("skip", false)) {
 				mg.removeModel(model);
@@ -106,6 +148,12 @@ public class DataBaseConnector {
 				String urlFromModel = (String)model.connectionDictionary().valueForKey("URL");
 				if(dbName == null && onlyHostname) {
 					url = urlFromModel.replaceFirst("localhost", serverURL);
+					if(urlSuffix != null) {
+						int idx = url.indexOf('?');
+						if(idx > 0)
+							url = url.substring(0,idx);
+						url = url + urlSuffix;
+					}
 				} else {
 					int index = urlFromModel.indexOf("localhost");
 					StringBuffer buf = new StringBuffer(serverURL);
@@ -114,7 +162,12 @@ public class DataBaseConnector {
 					if(buf.charAt(buf.length() -1) == '/')
 						buf.deleteCharAt(buf.length() -1);
 					if(dbName == null) {
-						buf.append(urlFromModel.substring(index + 9));
+						int idx = urlFromModel.indexOf('?',index + 9);
+						if(idx > 0 && urlSuffix != null) {
+							buf.append(urlFromModel.substring(index + 9,idx));
+						} else {
+							buf.append(urlFromModel.substring(index + 9));
+						}
 					} else {
 						if(onlyHostname)
 							buf.append(urlFromModel.charAt(index + 9));
@@ -126,9 +179,9 @@ public class DataBaseConnector {
 						if(tag != null)
 							dbName = String.format(dbName, tag);
 						buf.append(dbName);
-						if(urlSuffix != null)
-							buf.append(urlSuffix);
 					}
+					if(urlSuffix != null)
+						buf.append(urlSuffix);
 					url = buf.toString();
 				}
 			} // if(url == null && serverURL != null)
