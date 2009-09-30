@@ -133,6 +133,14 @@
             name = word; 
             valueClassName = NSString; 
             width = 28; 
+        }, 
+        {
+            columnName = chars; 
+            externalType = CHAR; 
+            name = chars; 
+            userInfo = {"_EntityModeler" = {generateSource = NO; }; }; 
+            valueClassName = NSString; 
+            valueType = c; 
         }
     ); 
     attributesUsedForLocking = (
@@ -151,7 +159,8 @@
         integer, 
         string, 
         text, 
-        timestamp
+        timestamp, 
+        chars
     ); 
     className = EOGenericRecord; 
     classProperties = (
@@ -170,10 +179,12 @@
         integer, 
         string, 
         text, 
-        timestamp
+        timestamp, 
+        chars
     ); 
     externalName = MySQL; 
     fetchSpecificationDictionary = {}; 
     name = MySQL; 
     primaryKeyAttributes = ("int_3"); 
+    userInfo = {"_EntityModeler" = {generateSource = NO; }; }; 
 }

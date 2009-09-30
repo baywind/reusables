@@ -24,6 +24,14 @@
             valueType = i; 
         }, 
         {
+            columnName = chars; 
+            externalType = CHAR; 
+            name = chars; 
+            userInfo = {"_EntityModeler" = {generateSource = NO; }; }; 
+            valueClassName = NSString; 
+            valueType = S; 
+        }, 
+        {
             columnName = date; 
             externalType = DATE; 
             name = date; 
@@ -130,6 +138,7 @@
         anagram, 
         boolean, 
         byte, 
+        chars, 
         date, 
         datetime, 
         decimal, 
@@ -149,6 +158,7 @@
         anagram, 
         boolean, 
         byte, 
+        chars, 
         date, 
         datetime, 
         decimal, 
