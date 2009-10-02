@@ -103,4 +103,19 @@ public class ModelGroupReport extends com.webobjects.appserver.WOComponent {
     		return "color:#999999;";
     	return null;
     }
+    
+    public String scale() {
+    	if(!(prop instanceof EOAttribute))
+    		return null;
+    	EOAttribute attr = (EOAttribute)prop;
+    	if(attr.width() > 0)
+    		return Integer.toString(attr.width());
+    	if(attr.precision() == 0)
+    		return null;
+    	if(attr.scale() == 0)
+    		return Integer.toString(attr.precision());
+    	StringBuilder buf = new StringBuilder(8);
+    	buf.append(attr.precision()).append('.').append(attr.scale());
+    	return buf.toString();
+    }
 }
