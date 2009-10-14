@@ -106,6 +106,8 @@ public class DataBaseConnector {
 						jdbcPrototype.setWriteFormat(dbPrototype.writeFormat());
 	                }
 				}
+			} else {
+				logger.log(WOLogLevel.WARNING,"Could not load prototypes " + prototypes);
 			}
 		}
 		Enumeration enu = mg.models().immutableClone().objectEnumerator();
