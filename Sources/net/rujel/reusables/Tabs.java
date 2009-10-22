@@ -158,8 +158,8 @@ public class Tabs extends WOComponent {
 				setValueForBinding(null,"currTab");
 				return null;
 			}
-			if(index.equals(currTab))
-				setValueForBinding(null,"currTab");
+//			if(index.equals(currTab))
+//				setValueForBinding(null,"currTab");
 			setValueForBinding(index,"currTab");
 		} else {
 			if(tabItem == currTab)
