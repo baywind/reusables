@@ -65,6 +65,7 @@ public class DataBaseConnector {
 		return makeConnections(null,null);
 	}
 	
+	protected static EOEntity prototypesEntity;
 	public static boolean makeConnections(EOObjectStore os, String tag) {
 		Logger logger = Logger.getLogger("rujel.dbConnection");
 		SettingsReader dbSettings = SettingsReader.settingsForPath("dbConnection", false);
@@ -77,23 +78,24 @@ public class DataBaseConnector {
 		String prototypes = dbSettings.get("prototypes",null);
 		if(prototypes != null) {
 	        EOEntity jdbcPrototypesEntity = mg.entityNamed("EOJDBCPrototypes");
-	        EOEntity entity = mg.entityNamed(prototypes);
-			if(entity == null) {
+	        if(prototypesEntity == null)
+	        	prototypesEntity = mg.entityNamed(prototypes);
+			if(prototypesEntity == null) {
 				NSDictionary plist = (NSDictionary)PlistReader.readPlist(prototypes, null);
 				if(plist != null) {
 					EOModel model = jdbcPrototypesEntity.model();
-					entity = new EOEntity(plist,model);
-					model.addEntity(entity);
+					prototypesEntity = new EOEntity(plist,model);
+					model.addEntity(prototypesEntity);
 				}
 			}
-			if(entity != null) {
+			if(prototypesEntity != null && !prototypesEntity.equals(jdbcPrototypesEntity)) {
 				logger.log(WOLogLevel.CONFIG,"Using prototypes from " + prototypes);
 				Enumeration enu = jdbcPrototypesEntity.attributes().objectEnumerator();
 				while (enu.hasMoreElements()) {
 					EOAttribute jdbcPrototype =  (EOAttribute)enu.nextElement();
 					String prototypesName = (String)jdbcPrototype.name();
 					EOAttribute dbPrototype = 
-						(EOAttribute)entity.attributeNamed(prototypesName);
+						(EOAttribute)prototypesEntity.attributeNamed(prototypesName);
 					if (dbPrototype != null) {
 						jdbcPrototype.setDefinition(dbPrototype.definition());
 						jdbcPrototype.setExternalType(dbPrototype.externalType()); 
