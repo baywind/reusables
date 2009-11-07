@@ -29,11 +29,15 @@
 
 package net.rujel.reusables;
 
+import java.util.logging.Logger;
+
 import com.webobjects.eocontrol.*;
 import com.webobjects.appserver.*;
+import com.webobjects.foundation.NSMutableArray;
 
 public class SessionedEditingContext extends EOEditingContext {
 	protected WOSession session;
+	protected static Logger logger = Logger.getLogger("rujel.reusables");
 	
 	protected Counter failures = new Counter();
 	
@@ -42,15 +46,21 @@ public class SessionedEditingContext extends EOEditingContext {
 					(EOObjectStore)ses.objectForKey("objectStore"):
 						EOObjectStoreCoordinator.defaultCoordinator());
 		if (ses == null) throw new 
-			NullPointerException ("You should define a session to instantiate SessionedEditingContext");
+			NullPointerException (
+					"You should define a session to instantiate SessionedEditingContext");
 		session = ses;
+		if(ses instanceof MultiECLockManager.Session)
+			((MultiECLockManager.Session)ses).ecLockManager().registerEditingContext(this);
 	}
 	
 	public SessionedEditingContext (EOObjectStore parent,WOSession ses){
 		super(parent);
 		if (ses == null) throw new 
-			NullPointerException ("You should define a session to instantiate SessionedEditingContext");
+			NullPointerException (
+					"You should define a session to instantiate SessionedEditingContext");
 		session = ses;
+		if(ses instanceof MultiECLockManager.Session)
+			((MultiECLockManager.Session)ses).ecLockManager().registerEditingContext(this);
 	}
 	
 	public WOSession session() {
@@ -70,4 +80,52 @@ public class SessionedEditingContext extends EOEditingContext {
 	public int failuresCount () {
 		return failures.value();
 	}
+	
+	protected void fin() {
+		if(session instanceof MultiECLockManager.Session)
+			((MultiECLockManager.Session)session).
+						ecLockManager().unregisterEditingContext(this);
+		if(_stackTraces.count() > 0)
+			logger.log(WOLogLevel.WARNING,"disposing locked editing context (" + 
+					_stackTraces.count() + ')', new Object[] 
+					             {session, new Exception(), _stackTraces});		
+	}
+	public void dispose() {
+		fin();
+		super.dispose();
+	}
+	public void finalize() {
+		fin();
+		super.dispose();
+	}
+	
+	private String _nameOfLockingThread = null;
+	private NSMutableArray _stackTraces = new NSMutableArray();
+
+	   public void lock() {
+	       String nameOfCurrentThread = Thread.currentThread().getName();
+	       String trace = WOLogFormatter.formatTrowable(new Exception());
+	       if (_stackTraces.count() == 0) {
+	           _stackTraces.addObject(trace);
+	           _nameOfLockingThread = nameOfCurrentThread;
+	       } else {
+	           if (nameOfCurrentThread.equals(_nameOfLockingThread)) {
+	               _stackTraces.addObject(trace);
+	           } else {
+	               logger.log(WOLogLevel.INFO,
+	            		   "Attempting to lock editing context from " + nameOfCurrentThread
+	            		   + " that was previously locked in " + _nameOfLockingThread,
+	            		   new  Object[] {session,trace,_stackTraces});
+	           }
+	       }
+	       super.lock();
+	   }
+
+	   public void unlock() {
+	       super.unlock();
+	       if (_stackTraces.count() > 0)
+	           _stackTraces.removeLastObject();
+	       if (_stackTraces.count() == 0)
+	           _nameOfLockingThread = null;
+	   }
 }
