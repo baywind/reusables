@@ -126,13 +126,23 @@ public class WOLogFormatter extends Formatter {
 		if(ec == null) {
 			toAppend.append("null");
 		} else {
-			NSDictionary pkey = EOUtilities.primaryKeyForObject(ec,eo);
-			if(pkey == null) {
-				toAppend.append("new");
-			} else if(pkey.count() > 1) {
-				toAppend.append(pkey);
+			EOGlobalID gid = ec.globalIDForObject(eo);
+			if(gid == null) {
+				toAppend.append("null");
+			} else if(gid.isTemporary()) {
+				toAppend.append("new").append(gid.hashCode());
 			} else {
-				toAppend.append(pkey.allValues().objectAtIndex(0));
+				Object[] keys = ((EOKeyGlobalID)gid).keyValues();
+				if(keys.length == 1) {
+					toAppend.append(keys[0]);
+				} else {
+					NSDictionary pkey = EOUtilities.primaryKeyForObject(ec,eo);
+					if(pkey == null) {
+						toAppend.append("null");
+					} else {
+						toAppend.append(pkey);
+					}
+				}
 			}
 		}
 		return toAppend;
