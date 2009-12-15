@@ -29,5 +29,7 @@
 	<binding name="idAttribute"/>
     <binding name="selectAction"/>
     <binding name="pushValues"/>
+    <binding name="classAttribute"/>
+    <binding name="defaultClass"/>
     </wo>
 </wodefinitions>

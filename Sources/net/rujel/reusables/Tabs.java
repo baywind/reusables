@@ -173,7 +173,7 @@ public class Tabs extends WOComponent {
 	
 	public String tabStyle() {
 		Object currTab = valueForBinding("currTab");
-		if(tabItem == null || index == null || currTab == null) return "grey";
+		if(tabItem != null && index != null && currTab != null) {
 		if(Various.boolForObject(valueForBinding("numeric"))) {
 			if(index.equals(currTab)) return "selection";
 		} else {
@@ -206,7 +206,21 @@ public class Tabs extends WOComponent {
 					return "selection";
 			}
 		}
-		return "grey";
+		}
+		String classAttribute = (String)valueForBinding("classAttribute");
+		if(classAttribute != null) {
+			try {
+			classAttribute = (String)NSKeyValueCoding.Utility.valueForKey(
+					tabItem, classAttribute);
+			} catch (Exception e) {
+				classAttribute = null;
+			}
+		}
+		if(classAttribute == null)
+			classAttribute = (String)valueForBinding("defaultClass");
+		if(classAttribute == null)
+			return "grey";
+		return classAttribute;
 	}
 	
 	public void setOnClick(String onClick){
