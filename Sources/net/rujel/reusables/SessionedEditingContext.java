@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import com.webobjects.eocontrol.*;
 import com.webobjects.appserver.*;
 import com.webobjects.foundation.NSMutableArray;
+import com.webobjects.foundation.NSMutableDictionary;
 
 public class SessionedEditingContext extends EOEditingContext {
 	protected WOSession session;
@@ -73,6 +74,14 @@ public class SessionedEditingContext extends EOEditingContext {
 			failures.nullify();
 		} catch (RuntimeException ex) {
 			failures.raise();
+			if(ex.getMessage().contains("rowDiffsForAttributes")) {
+				NSMutableDictionary dict = new NSMutableDictionary();
+				dict.takeValueForKey(insertedObjects(), "insertedObjects");
+				dict.takeValueForKey(updatedObjects(), "updatedObjects");
+				dict.takeValueForKey(deletedObjects(), "deletedObjects");
+				logger.log(WOLogLevel.INFO,"Editing context info",
+						new Object[] {session,dict});
+			}
 			throw ex;
 		}
 	}
@@ -87,16 +96,16 @@ public class SessionedEditingContext extends EOEditingContext {
 						ecLockManager().unregisterEditingContext(this);
 		if(_stackTraces.count() > 0)
 			logger.log(WOLogLevel.WARNING,"disposing locked editing context (" + 
-					_stackTraces.count() + ')', new Object[] 
+					_nameOfLockingThread + " : " + _stackTraces.count() + ')', new Object[] 
 					             {session, new Exception(), _stackTraces});		
 	}
 	public void dispose() {
 		fin();
 		super.dispose();
 	}
-	public void finalize() {
+	public void finalize() throws Throwable {
 		fin();
-		super.dispose();
+		super.finalize();
 	}
 	
 	private String _nameOfLockingThread = null;
@@ -128,4 +137,12 @@ public class SessionedEditingContext extends EOEditingContext {
 	       if (_stackTraces.count() == 0)
 	           _nameOfLockingThread = null;
 	   }
+	   
+	   public void insertObject(EOEnterpriseObject object) {
+		   super.insertObject(object);
+		   if(!globalIDForObject(object).isTemporary())
+			   logger.log(WOLogLevel.WARNING,"Inserting not new object",
+					   new Object[] {session,object});
+	   }
+
 }
