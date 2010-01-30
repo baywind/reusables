@@ -34,7 +34,6 @@ import java.util.logging.Logger;
 import com.webobjects.eocontrol.*;
 import com.webobjects.appserver.*;
 import com.webobjects.foundation.NSMutableArray;
-import com.webobjects.foundation.NSMutableDictionary;
 
 public class SessionedEditingContext extends EOEditingContext {
 	protected WOSession session;
@@ -74,14 +73,6 @@ public class SessionedEditingContext extends EOEditingContext {
 			failures.nullify();
 		} catch (RuntimeException ex) {
 			failures.raise();
-			if(ex.getMessage().contains("rowDiffsForAttributes")) {
-				NSMutableDictionary dict = new NSMutableDictionary();
-				dict.takeValueForKey(insertedObjects(), "insertedObjects");
-				dict.takeValueForKey(updatedObjects(), "updatedObjects");
-				dict.takeValueForKey(deletedObjects(), "deletedObjects");
-				logger.log(WOLogLevel.INFO,"Editing context info",
-						new Object[] {session,dict});
-			}
 			throw ex;
 		}
 	}
