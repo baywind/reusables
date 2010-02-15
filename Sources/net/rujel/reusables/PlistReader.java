@@ -92,6 +92,7 @@ public class PlistReader extends SettingsReader implements Cloneable {
 		innerKeyPath = new StringBuffer();
 		rootDict = dict;
 		pref = rootDict;
+		state = 3;
 	}
 
 	public void refresh() {
@@ -417,19 +418,19 @@ public class PlistReader extends SettingsReader implements Cloneable {
 	}
 
 	public Object valueForKey(String key) {
-		return valueForKeyPath(key);
-		/*
 		Object result =  pref.valueForKey(key);
 		if (result instanceof NSDictionary) {
+			return new PlistReader((NSDictionary)result);
+			/*
 			PlistReader next = new PlistReader(inputFilePath,encoding,innerKeyPath);
 			appendKey(next.innerKeyPath, key);
 			next.rootDict = rootDict;
 			next.pref = (NSDictionary)result;
 			result = resolveLink((NSDictionary)result, next);
 			if (result instanceof NSDictionary)
-				return next;
+				return next;*/
 		}
-		return result;*/
+		return result;
 	}
 
 	public void mergeValueToKeyPath(Object value, String keyPath) {
