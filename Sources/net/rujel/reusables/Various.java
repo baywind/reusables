@@ -115,7 +115,8 @@ public class Various {
 						System.getProperty("WOLocalRootDirectory",""), 
 						"/Library/WebObjects/Configuration");
 			filePath = NSPathUtilities.stringByAppendingPathComponent(prefix,filePath);
-		} else if (filePath.startsWith("LOCALROOT")) {
+		}
+		if (filePath.startsWith("LOCALROOT")) {
 			filePath = filePath.substring(9);
 			filePath = NSPathUtilities.stringByAppendingPathComponent(
 					System.getProperty("WOLocalRootDirectory",""),filePath);
@@ -133,6 +134,8 @@ public class Various {
 				prefix = NSPathUtilities.stringByAppendingPathComponent(
 						System.getProperty("WOLocalRootDirectory",""), 
 						"/Library/WebObjects/Configuration");
+			else
+				prefix = convertFilePath(prefix);
 			filePath = NSPathUtilities.stringByAppendingPathComponent(prefix, filePath);
 		}
 		if(File.separatorChar != '/')
