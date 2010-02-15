@@ -107,12 +107,36 @@ public class Various {
 	public static String convertFilePath(String filePath) {
 		if(filePath == null)
 			return null;
-		filePath = filePath.replaceFirst("LOCALROOT", System.getProperty("WOLocalRootDirectory",""));
-		filePath = filePath.replaceFirst("WOROOT", System.getProperty("WORootDirectory","/System"));
-		filePath = filePath.replaceFirst("~",
-				System.getProperty("WOUserDirectory","/root"));
+		if(filePath.startsWith("CONFIGDIR")) {
+			filePath = filePath.substring(9);
+			String prefix = System.getProperty("CONFIGDIR");
+			if(prefix == null)
+				prefix = NSPathUtilities.stringByAppendingPathComponent(
+						System.getProperty("WOLocalRootDirectory",""), 
+						"/Library/WebObjects/Configuration");
+			filePath = NSPathUtilities.stringByAppendingPathComponent(prefix,filePath);
+		} else if (filePath.startsWith("LOCALROOT")) {
+			filePath = filePath.substring(9);
+			filePath = NSPathUtilities.stringByAppendingPathComponent(
+					System.getProperty("WOLocalRootDirectory",""),filePath);
+		} else if (filePath.startsWith("WOROOT")) {
+			filePath = filePath.substring(6);
+			filePath = NSPathUtilities.stringByAppendingPathComponent(
+					System.getProperty("WORootDirectory","/System"),filePath);
+		} else if(filePath.charAt(0) == '~') {
+			filePath = filePath.substring(1);
+			filePath = NSPathUtilities.stringByAppendingPathComponent(
+					System.getProperty("WOUserDirectory",""),filePath);
+		} else if(filePath.charAt(0) != '.' && filePath.charAt(0) != '/') {
+			String prefix = System.getProperty("CONFIGDIR");
+			if(prefix == null)
+				prefix = NSPathUtilities.stringByAppendingPathComponent(
+						System.getProperty("WOLocalRootDirectory",""), 
+						"/Library/WebObjects/Configuration");
+			filePath = NSPathUtilities.stringByAppendingPathComponent(prefix, filePath);
+		}
 		if(File.separatorChar != '/')
-			filePath = filePath.replaceAll("/", File.separator);
+			filePath = filePath.replace('/', File.separatorChar);
 		return filePath;
 	}
 }

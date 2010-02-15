@@ -136,6 +136,8 @@ public abstract class SettingsReader implements NSKeyValueCodingAdditions {
 	
 	public abstract java.util.Enumeration keyEnumerator();
 	
+	public abstract void mergeValueToKeyPath(Object value, String keyPath);
+	
 	public abstract void refresh();
 	
 	public void save() throws Exception{
@@ -174,6 +176,10 @@ public abstract class SettingsReader implements NSKeyValueCodingAdditions {
 			
 		}
 		public void takeValueForKeyPath(Object value, String keyPath) {
+			
+		}
+		
+		public void mergeValueToKeyPath(Object value, String keyPath) {
 			
 		}
 	};

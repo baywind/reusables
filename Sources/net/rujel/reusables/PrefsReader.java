@@ -32,6 +32,7 @@ package net.rujel.reusables;
 import com.webobjects.foundation.*;
 import java.util.prefs.*;
 import java.util.Enumeration;
+
 //import com.webobjects.eocontrol.*;
 
 public class PrefsReader extends SettingsReader {
@@ -279,5 +280,10 @@ public class PrefsReader extends SettingsReader {
 	}	
 	public void putBoolean(String key, boolean value) {
 		pref.putBoolean(key, value);
+	}
+	
+	public void mergeValueToKeyPath(Object value, String keyPath) {
+		throw new UnsupportedOperationException(
+				"Merge operation is not supported by PrefsReader");
 	}
 }

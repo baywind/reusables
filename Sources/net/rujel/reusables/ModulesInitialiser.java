@@ -30,6 +30,8 @@
 package net.rujel.reusables;
 
 //import java.util.prefs.*;
+import java.io.File;
+import java.io.FileInputStream;
 import java.lang.reflect.Method;
 import com.webobjects.foundation.*;
 import com.webobjects.eocontrol.EOSortOrdering;
@@ -45,21 +47,107 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 	public static NSArray sorter = new NSArray(
 			EOSortOrdering.sortOrderingWithKey("sort",EOSortOrdering.CompareAscending));
 	
-	public static void readModules(SettingsReader list) {
-		if(list == null) {
+	public static void readModules(SettingsReader prefs, String modPath) {
+		if(prefs == null) {
 			modules = null;
 			return;
 		}
+		Object pref = prefs.valueForKeyPath(modPath);
 		NSMutableArray mods = new NSMutableArray();
-		Enumeration enu = list.keyEnumerator();
-		while (enu.hasMoreElements()) {
-			String name = (String)enu.nextElement();
-			if(list.getBoolean(name,false)) {
+		if(pref instanceof SettingsReader) {
+			SettingsReader list = (SettingsReader)pref;
+			Enumeration enu = list.keyEnumerator();
+			while (enu.hasMoreElements()) {
+				String name = (String)enu.nextElement();
+				if(!list.getBoolean(name,false))
+					continue;
 				try {
 					Class cl = Class.forName(name);
+					try {
+						Method is = cl.getMethod("isActive");
+						if(Various.boolForObject(is.invoke(null)))
+							continue;
+					} catch (NoSuchMethodException ex) {
+						;
+					} catch (Exception e) {
+						logger.log(Level.WARNING,"Error testing avalability for module"
+								+ name,e);
+					}
+					try {
+						mods.addObject(cl.getMethod("init",Object.class,WOContext.class));
+					} catch (NoSuchMethodException ex) {
+						logger.log(Level.WARNING,
+								"Could not get 'init' method for module " + name,ex);
+					}
+				} catch (Exception e) {
+					logger.log(Level.WARNING,
+							"Error initialising module " + name,e);
+				}
+			}
+		} else {
+			String filePath = pref.toString();
+			File folder = new File(Various.convertFilePath(filePath));
+			File[] list = folder.listFiles();
+			String encoding = System.getProperty("PlistReader.encoding","utf8");
+			NSMutableArray plists = new NSMutableArray();
+			for (int i = 0; i < list.length; i++) {
+				try {
+					FileInputStream fis = new FileInputStream(list[i]);
+					NSData data = new NSData(fis,fis.available());
+					fis.close();
+					NSDictionary dict = (NSDictionary)NSPropertyListSerialization.
+						propertyListFromData(data, encoding);
+					plists.addObject(dict);
+				} catch (Exception e) {
+					logger.log(Level.WARNING, "Error reading modules settings",
+							new Object[] {list[i],e});
+				}
+			}
+			EOSortOrdering.sortArrayUsingKeyOrderArray(plists, sorter);
+			Enumeration enu = plists.objectEnumerator();
+			while(enu.hasMoreElements()) {
+				NSDictionary dict = (NSDictionary)enu.nextElement();
+				String val = (String)dict.valueForKey("moduleClass");
+				if(val == null) {
+					prefs.mergeValueToKeyPath(dict, null);
+					continue;
+				}
+				Class cl = null;
+				try {
+					cl = Class.forName(val);
+				} catch (Exception e) {
+					logger.log(Level.FINE,
+							"Class not found for module " + val,e);
+					continue;
+				}
+				try {
+					Method is = cl.getMethod("isActive");
+					if(Various.boolForObject(is.invoke(null)))
+						continue;
+				} catch (NoSuchMethodException ex) {
+					;
+				} catch (Exception e) {
+					logger.log(Level.WARNING,"Error testing avalability for module" + val,e);
+				}
+				try {
 					mods.addObject(cl.getMethod("init",Object.class,WOContext.class));
-				} catch (Exception ex) {
-					logger.logp(Level.WARNING,"ModulesInitialiser","readModules","Could not get 'init' method for module " + name,ex);
+				} catch (NoSuchMethodException ex) {
+					logger.log(Level.FINE, "Could not get 'init' method for module " + val);
+				}
+				try {
+					Method merge = cl.getMethod("merge",
+							NSDictionary.class,SettingsReader.class);
+					merge.invoke(null, dict, prefs);
+				} catch (NoSuchMethodException ex) {
+					Enumeration kenu = dict.keyEnumerator();
+					while (kenu.hasMoreElements()) {
+						String key = (String) kenu.nextElement();
+						Object value = dict.objectForKey(key);
+						if(value instanceof NSDictionary)
+							prefs.mergeValueToKeyPath(value, key);
+					}
+				} catch (Exception e) {
+					logger.log(Level.WARNING,"Error merging settings for module" + val,e);
 				}
 			}
 		}
@@ -70,6 +158,7 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 			}
 		}
 	}
+	
 	/*
 	public static void readModules(Preferences node) {
 		if(node == null) {
@@ -95,13 +184,13 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 			}
 		}
 	}*/
-	public static Object[] initModules(SettingsReader list,Object param) {
-		return initModules(list, param, null);
+	public static Object[] initModules(Object param) {
+		return initModules(SettingsReader.rootSettings(), "modules",param, null);
 	}
 
-	public static Object[] initModules(SettingsReader list,Object param,WOContext ctx) {
+	public static Object[] initModules(SettingsReader prefs, String modPath, Object param,WOContext ctx) {
 		if(modules == null)
-			readModules(list);
+			readModules(prefs, modPath);
 		if(modules == null) return null;
 		Object[] result = new Object[modules.length];
 		for (int i = 0; i < modules.length; i++) {
