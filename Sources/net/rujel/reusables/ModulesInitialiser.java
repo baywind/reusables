@@ -85,7 +85,7 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 				}
 			}
 		} else {
-			String filePath = pref.toString();
+			String filePath = (pref == null)?"modules":pref.toString();
 			File folder = new File(Various.convertFilePath(filePath));
 			File[] list = folder.listFiles();
 			String encoding = System.getProperty("PlistReader.encoding","utf8");
@@ -115,9 +115,9 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 				Class cl = null;
 				try {
 					cl = Class.forName(val);
-				} catch (Exception e) {
+				} catch (ClassNotFoundException e) {
 					logger.log(Level.FINE,
-							"Class not found for module " + val,e);
+							"Class not found for module " + val);
 					continue;
 				}
 				try {
@@ -131,6 +131,7 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 				}
 				try {
 					mods.addObject(cl.getMethod("init",Object.class,WOContext.class));
+					logger.log(Level.CONFIG, "Registered module " + val);
 				} catch (NoSuchMethodException ex) {
 					logger.log(Level.FINE, "Could not get 'init' method for module " + val);
 				}
