@@ -121,6 +121,7 @@ public class DataBaseConnector {
 		boolean success = true;
 		NSMutableDictionary connDict = connectionDictionaryFromSettings(dbSettings, null);
 		EOEditingContext ec = (os != null)?new EOEditingContext(os):new EOEditingContext();
+		SettingsReader dbMapping = dbSettings.subreaderForPath("dbMapping", false);
 		while (enu.hasMoreElements()) {
 			EOModel model = (EOModel) enu.nextElement();
 			if(model.name().endsWith("Prototypes")) {
@@ -147,6 +148,25 @@ public class DataBaseConnector {
 				url = currSettings.get("URL", null);
 				if(url == null)
 					dbName = currSettings.get("dbName", null);
+				if(dbName != null && dbMapping != null) {
+					Object mapped = dbMapping.valueForKey(dbName);
+					if(mapped == null && tag != null)
+						mapped = dbMapping.valueForKey(String.format(dbName, tag));
+					if(mapped != null) {
+						if(mapped instanceof String) {
+							dbName = (String)mapped;
+							if(dbName.startsWith("jdbc")) {
+								url = dbName;
+								dbName = null;
+							}
+						} else if(mapped instanceof SettingsReader) {
+							cd = connectionDictionaryFromSettings((SettingsReader)mapped, cd);
+							url = ((SettingsReader)mapped).get("URL", null);
+							if(url == null)
+								dbName = ((SettingsReader)mapped).get("dbName", null);
+						}
+					}
+				}
 			}
 			if(url == null && serverURL != null) {
 				String urlFromModel = (String)model.connectionDictionary().valueForKey("URL");

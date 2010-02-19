@@ -32,6 +32,8 @@ package net.rujel.reusables;
 import java.util.Enumeration;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 
 import com.webobjects.appserver.WOApplication;
 import com.webobjects.foundation.*;
@@ -104,7 +106,12 @@ public class PlistReader extends SettingsReader implements Cloneable {
 			System.err.println("Specified file does not exisi or can't be read");
 			return;
 		}
-		rootDict = (NSDictionary)readPlist(inputFile.getAbsolutePath(), encoding);
+		try {
+			rootDict = (NSDictionary)readPlist(new FileInputStream(inputFile), encoding);
+		} catch (FileNotFoundException e) {
+			throw new NSForwardException(e,"Could not read plist at specified path: " 
+					+ inputFile.getAbsolutePath());
+		}
 		if(rootDict == null)
 			throw new NullPointerException("Could not read plist at specified path: " 
 					+ inputFile);
@@ -117,16 +124,33 @@ public class PlistReader extends SettingsReader implements Cloneable {
 		state = 0;
 	}
 	
-	public static Object readPlist(String filePath, String encoding) {
-		filePath = Various.convertFilePath(filePath);
+	public static Object readPlist(String filename, String framework, String encoding) {
+		InputStream is = WOApplication.application().resourceManager().
+					inputStreamForResourceNamed(filename, framework, null);
+		return readPlist(is, encoding);
+	}
+	
+	public static Object readPlist(InputStream stream, String encoding) {
 		if(encoding == null)
 			encoding = System.getProperty("PlistReader.encoding","utf8");
 		try {
+			if(stream == null)
+				return null;
+			NSData data = new NSData(stream,stream.available());
+			return NSPropertyListSerialization.propertyListFromData(data,encoding);
+		} catch (Exception e) {
+			System.err.println("Error reading plist " + stream
+					+ " using encoding " + encoding);
+			e.printStackTrace(System.err);
+			return null;
+		}
+	}
+	
+	public static Object readPlist(String filePath, String encoding) {
+		filePath = Various.convertFilePath(filePath);
+		try {
 			FileInputStream fis = new FileInputStream(filePath);
-			NSData data = new NSData(fis,fis.available());
-			fis.close();
-			//System.out.println("Settings are read from " + filePath);
-			return NSPropertyListSerialization.propertyListFromData(data, encoding);
+			return readPlist(fis, encoding);
 		} catch (java.io.IOException ioex) {
 			System.err.println("Error reading plist " + filePath + 
 					" using encoding " + encoding);
@@ -184,8 +208,12 @@ public class PlistReader extends SettingsReader implements Cloneable {
 				if(newEncoding == null)
 					newEncoding = encoding;
 				File nextFile = resolveFile(filePath);
-				newRootDict = (NSDictionary)readPlist(nextFile.getAbsolutePath()
-						, newEncoding);
+				try {
+					newRootDict = (NSDictionary)readPlist(new FileInputStream(nextFile)
+							, newEncoding);
+				} catch (FileNotFoundException e) {
+					throw new NSForwardException(e);
+				}
 				if(updateReader != null) {
 					updateReader.rootDict = newRootDict;
 					updateReader.encoding = newEncoding;
@@ -228,52 +256,6 @@ public class PlistReader extends SettingsReader implements Cloneable {
 		}
 		return dict;
 	}
-	
-	/*
-	public Object traverseKeyPath(String keyPath, boolean createIfNeeded, 
-			PlistReader updateReader) {
-		String[] path = keyPath.split("\\.");
-		NSDictionary dict = pref;
-		Object next = pref;
-		for (int i = 0; i < path.length; i++) {
-			String key = path[i];
-			next = dict.valueForKey(key);
-			if(next == null) {
-				if(!createIfNeeded)
-					return null;
-				next = new NSMutableDictionary();
-				if(state < 1)
-					dict = changeState(path, i);
-				dict.takeValueForKey(next, key);
-			} else if (dictIslink(next)) {
-				next = resolveLink((NSDictionary)next, updateReader);
-				if(state < 1)
-					dict = changeState(path, i);
-				if(state < 2)
-					state = 2;
-				dict.takeValueForKey(next, key);
-			}
-			
-			if(next instanceof NSDictionary) {
-				dict = (NSDictionary)next;
-				if(updateReader != null) {
-					appendKey(updateReader.innerKeyPath, key);
-					updateReader.pref = dict;
-				}
-			} else if (i < (path.length -1)) {
-				i++;
-				StringBuffer subPath = new StringBuffer(path[i]);
-				i++;
-				while(i < path.length){
-					subPath.append('.').append(path[i]);
-					i++;
-				} 
-				return NSKeyValueCodingAdditions.Utility.valueForKeyPath(next,
-						subPath.toString());
-			}
-		}
-		return next;
-	} */
 	
 	public static NSMutableDictionary cloneDictionary (NSDictionary dict, boolean recurse) {
 		if(dict == null) return null;
@@ -326,7 +308,7 @@ public class PlistReader extends SettingsReader implements Cloneable {
 		return pref.keyEnumerator();
 	}
 
-	public SettingsReader subreaderForPath(String path, boolean createIfNeeded) {
+	public PlistReader subreaderForPath(String path, boolean createIfNeeded) {
 		PlistReader result = (PlistReader)traverseKeyPath(path, createIfNeeded, true);
 			/*new PlistReader(inputFile,encoding,innerKeyPath);
 		result.rootDict = rootDict;
@@ -451,8 +433,8 @@ public class PlistReader extends SettingsReader implements Cloneable {
 			shouldMerge = (value instanceof NSDictionary);
 		}
 		if(shouldMerge) {
-			NSMutableDictionary dict = (NSMutableDictionary)traverseKeyPath(
-					keyPath, true, false);
+			NSMutableDictionary dict = (NSMutableDictionary)((keyPath==null)?pref:
+				traverseKeyPath(keyPath, true, false));
 			mergeDict(dict, (NSDictionary)value);
 		} else {
 			int dot = keyPath.lastIndexOf('.');
@@ -466,39 +448,6 @@ public class PlistReader extends SettingsReader implements Cloneable {
 				pref.takeValueForKey(value, keyPath);
 			}
 		}
-		/*
-		if(keyPath != null) {
-			int dot = keyPath.lastIndexOf('.');
-			if(dot > 0) {
-				String[] path = keyPath.split("\\.");
-				dot = path.length -1;
-				for (int i = 0; i < dot; i++) {
-					NSMutableDictionary next = (NSMutableDictionary)dict.valueForKey(path[i]);
-					if(next == null) {
-						next = new NSMutableDictionary();
-						dict.takeValueForKey(next, path[i]);
-						if(shouldMerge)
-							value = cloneDictionary((NSDictionary)value, true);
-						shouldMerge = false;
-					} else {
-						next = (NSMutableDictionary)resolveLink(next, null);
-					}
-					dict = next;
-				}
-				keyPath = path[dot];
-			}
-		}
-		if(shouldMerge) {
-			Object val = dict.valueForKey(keyPath);
-			if(val instanceof NSMutableDictionary)
-				mergeDict((NSMutableDictionary)val, (NSDictionary)value);
-			else
-				dict.takeValueForKey(cloneDictionary((NSDictionary)value, true), keyPath);
-		} else {
-			if(value == NullValue)
-				value = null;
-			dict.takeValueForKey(value, keyPath);
-		}*/
 	}
 	
 	protected void mergeDict(NSMutableDictionary target, NSDictionary source) {
@@ -568,7 +517,11 @@ public class PlistReader extends SettingsReader implements Cloneable {
 						resultReader.refresh();
 						next = resultReader.pref;
 					} else {
-						next = readPlist(resolveFile(link).getAbsolutePath(), encoding);
+						try {
+							next = readPlist(new FileInputStream(resolveFile(link)), encoding);
+						} catch (FileNotFoundException e) {
+							throw new NSForwardException(e);
+						}
 					}
 				} else {
 					if(reader) {

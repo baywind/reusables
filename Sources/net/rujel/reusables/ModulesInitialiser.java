@@ -54,6 +54,7 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 		}
 		Object pref = prefs.valueForKeyPath(modPath);
 		NSMutableArray mods = new NSMutableArray();
+		NSMutableArray active = new NSMutableArray();
 		if(pref instanceof SettingsReader) {
 			SettingsReader list = (SettingsReader)pref;
 			Enumeration enu = list.keyEnumerator();
@@ -64,8 +65,8 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 				try {
 					Class cl = Class.forName(name);
 					try {
-						Method is = cl.getMethod("isActive");
-						if(Various.boolForObject(is.invoke(null)))
+						Method is = cl.getMethod("isAvailable",NSArray.class);
+						if(!Various.boolForObject(is.invoke(null,active)))
 							continue;
 					} catch (NoSuchMethodException ex) {
 						;
@@ -79,6 +80,7 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 						logger.log(Level.WARNING,
 								"Could not get 'init' method for module " + name,ex);
 					}
+					active.addObject(name);
 				} catch (Exception e) {
 					logger.log(Level.WARNING,
 							"Error initialising module " + name,e);
@@ -107,34 +109,35 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 			Enumeration enu = plists.objectEnumerator();
 			while(enu.hasMoreElements()) {
 				NSDictionary dict = (NSDictionary)enu.nextElement();
-				String val = (String)dict.valueForKey("moduleClass");
-				if(val == null) {
+				String className = (String)dict.valueForKey("moduleClass");
+				if(className == null) {
 					prefs.mergeValueToKeyPath(dict, null);
 					continue;
 				}
 				Class cl = null;
 				try {
-					cl = Class.forName(val);
+					cl = Class.forName(className);
 				} catch (ClassNotFoundException e) {
 					logger.log(Level.FINE,
-							"Class not found for module " + val);
+							"Class not found for module " + className);
 					continue;
 				}
 				try {
-					Method is = cl.getMethod("isActive");
-					if(Various.boolForObject(is.invoke(null)))
+					Method is = cl.getMethod("isAvailable",NSArray.class);
+					if(!Various.boolForObject(is.invoke(null,active)))
 						continue;
 				} catch (NoSuchMethodException ex) {
 					;
 				} catch (Exception e) {
-					logger.log(Level.WARNING,"Error testing avalability for module" + val,e);
+					logger.log(Level.WARNING,"Error testing avalability for module" + className,e);
 				}
 				try {
 					mods.addObject(cl.getMethod("init",Object.class,WOContext.class));
-					logger.log(Level.CONFIG, "Registered module " + val);
+					logger.log(Level.CONFIG, "Registered module " + className);
 				} catch (NoSuchMethodException ex) {
-					logger.log(Level.FINE, "Could not get 'init' method for module " + val);
+					logger.log(Level.FINE, "Could not get 'init' method for module " + className);
 				}
+				active.addObject(className);
 				try {
 					Method merge = cl.getMethod("merge",
 							NSDictionary.class,SettingsReader.class);
@@ -148,7 +151,7 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 							prefs.mergeValueToKeyPath(value, key);
 					}
 				} catch (Exception e) {
-					logger.log(Level.WARNING,"Error merging settings for module" + val,e);
+					logger.log(Level.WARNING,"Error merging settings for module" + className,e);
 				}
 			}
 		}
@@ -200,7 +203,7 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 					result[i] = modules[i].invoke(null,param,ctx);
 				} catch (java.lang.reflect.InvocationTargetException tex) {
 					logger.logp(Level.WARNING,"ModulesInitialiser","initModules","Error performing initialisation of module " + modules[i],tex);
-					throw new RuntimeException("Error performing initialisation" + tex.getCause(),tex.getCause());
+					throw new RuntimeException("Error performing initialisation " + tex.getCause(),tex.getCause());
 				} catch (Exception ex) {
 					logger.logp(Level.WARNING,"ModulesInitialiser","initModules","Error performing initialisation of module " + modules[i],ex);
 					throw new RuntimeException("Initialisation error: " + ex,ex);
