@@ -135,7 +135,8 @@ public class DataBaseConnector {
 				continue;
 			}
 			SettingsReader currSettings = dbSettings.subreaderForPath(model.name(), false);
-			if(currSettings != null && currSettings.getBoolean("skip", false)) {
+			boolean noSettings = (currSettings == null); 
+			if(!noSettings && currSettings.getBoolean("skip", false)) {
 				mg.removeModel(model);
 				logger.config("Skipping model '" + model.name() + '\'');
 				continue;
@@ -225,24 +226,29 @@ public class DataBaseConnector {
 										"' could not connect to database";
 					if(url != null)
 						message = message + '\n' + url;
-					logger.log(WOLogLevel.WARNING, message, e);
-					success = false;
-					if(url != null) {
-						String untagged = (currSettings==null)?null:
-							currSettings.get("untagged", null);
-						if(untagged != null) {
-							url = url.replaceFirst(dbName, untagged);
-							cd.takeValueForKey(url, "URL");
-							try {
-								EODatabaseContext.forceConnectionWithModel(model, cd, ec);
-								message = "Model '" + model.name() +
-									"' connected to untagged database" + '\n' + url;
-								logger.config(message);
-								success = true;
-							} catch (Exception ex) {
-								message = "Model '" + model.name() + 
+					if(noSettings) {
+						logger.log(WOLogLevel.INFO, message);
+//						mg.removeModel(model);
+					} else {
+						logger.log(WOLogLevel.WARNING, message, e);
+						success = false;
+						if(url != null) {
+							String untagged = (currSettings==null)?null:
+								currSettings.get("untagged", null);
+							if(untagged != null) {
+								url = url.replaceFirst(dbName, untagged);
+								cd.takeValueForKey(url, "URL");
+								try {
+									EODatabaseContext.forceConnectionWithModel(model, cd, ec);
+									message = "Model '" + model.name() +
+											"' connected to untagged database" + '\n' + url;
+									logger.config(message);
+									success = true;
+								} catch (Exception ex) {
+									message = "Model '" + model.name() + 
 									"' also could not connect to database" + '\n' + url;
-								logger.log(WOLogLevel.WARNING, message, ex);
+									logger.log(WOLogLevel.WARNING, message, ex);
+								}
 							}
 						}
 					}
