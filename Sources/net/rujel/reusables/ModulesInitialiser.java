@@ -111,7 +111,13 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 				NSDictionary dict = (NSDictionary)enu.nextElement();
 				String className = (String)dict.valueForKey("moduleClass");
 				if(className == null) {
-					prefs.mergeValueToKeyPath(dict, null);
+					Enumeration kenu = dict.keyEnumerator();
+					while (kenu.hasMoreElements()) {
+						String key = (String) kenu.nextElement();
+						Object value = dict.objectForKey(key);
+						if(value instanceof NSDictionary)
+							prefs.mergeValueToKeyPath(value, key);
+					}
 					continue;
 				}
 				Class cl = null;

@@ -133,7 +133,7 @@ public class SessionedEditingContext extends EOEditingContext {
 		   super.insertObject(object);
 		   if(!globalIDForObject(object).isTemporary())
 			   logger.log(WOLogLevel.WARNING,"Inserting not new object",
-					   new Object[] {session,object});
+					   new Object[] {session,object, new Exception()});
 	   }
 
 }
