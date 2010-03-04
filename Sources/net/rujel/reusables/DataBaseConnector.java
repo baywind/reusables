@@ -115,7 +115,6 @@ public class DataBaseConnector {
 		Enumeration enu = mg.models().immutableClone().objectEnumerator();
 		
 		String serverURL = dbSettings.get("serverURL",null);
-		boolean onlyHostname = !serverURL.startsWith("jdbc");
 		String urlSuffix = dbSettings.get("urlSuffix",null);
 		
 		boolean success = true;
@@ -170,6 +169,7 @@ public class DataBaseConnector {
 				}
 			}
 			if(url == null && serverURL != null) {
+				boolean onlyHostname = !serverURL.startsWith("jdbc");
 				String urlFromModel = (String)model.connectionDictionary().valueForKey("URL");
 				if(dbName == null && onlyHostname) {
 					url = urlFromModel.replaceFirst("localhost", serverURL);
