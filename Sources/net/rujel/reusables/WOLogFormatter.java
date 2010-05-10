@@ -110,6 +110,11 @@ public class WOLogFormatter extends Formatter {
 			if(html) toAppend.append("<br/>");
 			toAppend.append('\n');
 			formatTrowable(((NSForwardException)t).originalException(),toAppend,trace[0],html);
+		} else if(t instanceof NSValidation.ValidationException) {
+			NSValidation.ValidationException vex = (NSValidation.ValidationException)t;
+			if(html) toAppend.append("<br/>");
+			toAppend.append('\n').append(vex.key()).append(" =\t");
+			formatObject(vex.object(), toAppend);
 		}
 		return toAppend;
 	}
@@ -164,7 +169,7 @@ public class WOLogFormatter extends Formatter {
 		return toAppend;
 	}
 	
-	protected StringBuffer formatDictionary(NSDictionary dict, StringBuffer buf) {
+	protected static StringBuffer formatDictionary(NSDictionary dict, StringBuffer buf) {
 		Enumeration den = dict.keyEnumerator();
 		Object key = null;
 		while (den.hasMoreElements()) {
@@ -175,7 +180,7 @@ public class WOLogFormatter extends Formatter {
 		return buf;
 	}
 	
-	protected StringBuffer formatArray(NSArray array, StringBuffer buf) {
+	protected static StringBuffer formatArray(NSArray array, StringBuffer buf) {
 		Enumeration aen = array.objectEnumerator();
 		Object obj = null;
 		buf.append('{');
@@ -189,7 +194,7 @@ public class WOLogFormatter extends Formatter {
 		return buf;
 	}
 	
-	protected StringBuffer formatObject(Object obj, StringBuffer buf) {
+	protected static StringBuffer formatObject(Object obj, StringBuffer buf) {
 		if(obj instanceof EOEnterpriseObject) {
 			formatEO((EOEnterpriseObject)obj,buf);
 		} else if(obj instanceof NSDictionary) {
