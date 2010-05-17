@@ -135,7 +135,7 @@ public class NamedFlags extends MutableFlags implements NSKeyValueCoding,Cloneab
 				;
 			}
 		}
-			return false;
+		return false;
 	}
 	
 	public void setFlagForKey(boolean flag, Object key) {
@@ -144,7 +144,8 @@ public class NamedFlags extends MutableFlags implements NSKeyValueCoding,Cloneab
 			setFlag (idx,flag);
 		}
 		catch (NSKeyValueCoding.UnknownKeyException ex) {
-			throw new NSKeyValueCoding.UnknownKeyException("Provided key (" + key + ") was not specified.",new Boolean(flag),key.toString());
+			throw new NSKeyValueCoding.UnknownKeyException("Provided key (" + key + 
+					") was not specified.",new Boolean(flag),key.toString());
 		}
 	}
 
@@ -160,12 +161,12 @@ public class NamedFlags extends MutableFlags implements NSKeyValueCoding,Cloneab
 				result = flagForKey(subKey);
 				if(subKey != key)
 					result = !result;
-			}
-			catch (IllegalArgumentException ex) {
-				throw new NSKeyValueCoding.UnknownKeyException("Provided key (" + key + ") was not specified.",null,key);
+			} catch (IllegalArgumentException ex) {
+				throw new NSKeyValueCoding.UnknownKeyException("Provided key (" + key +
+						") was not specified.",null,key);
 			}
 		}
-		return new Boolean(result);
+		return Boolean.valueOf(result);
 	}
 
 	public void takeValueForKey(Object value, String key) {
@@ -175,8 +176,11 @@ public class NamedFlags extends MutableFlags implements NSKeyValueCoding,Cloneab
 		else {
 			if(value instanceof Number)
 				flag = (((Number)value).intValue() > 0);
+			if(value instanceof CharSequence)
+				flag = Boolean.parseBoolean(value.toString());
 			else
-				throw new IllegalArgumentException ("Provided value (" + value + ") could not be converted to boolean.");
+				throw new IllegalArgumentException ("Provided value (" + value +
+						") could not be converted to boolean.");
 		}
 		int idx;
 		if (key.charAt(0)=='@') {
@@ -184,12 +188,6 @@ public class NamedFlags extends MutableFlags implements NSKeyValueCoding,Cloneab
 			setFlag (idx,flag);
 		} else {
 			setFlagForKey(flag,key);
-			/*try {
-				idx = getIndexForKey(key);
-			}
-			catch (NSKeyValueCoding.UnknownKeyException ex) {
-				throw new NSKeyValueCoding.UnknownKeyException("Provided key was not specified.",value,key);
-			}*/
 		}
 	}
 	
@@ -200,7 +198,8 @@ public class NamedFlags extends MutableFlags implements NSKeyValueCoding,Cloneab
 			public int numberForKey (Object key) {
 				int result = keys.indexOfObject(key);
 				if (result == NSArray.NotFound)
-					throw new IllegalArgumentException("Provided key (" + key + ") was not specified.");
+					throw new IllegalArgumentException(
+							"Provided key (" + key + ") was not specified.");
 				return result;
 			} //numberForKey
 			
