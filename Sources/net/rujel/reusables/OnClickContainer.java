@@ -46,16 +46,16 @@ public class OnClickContainer extends ExtDynamicElement {
 		checkRequired(associations, "elementName");
 	}
 
-	public void appendToResponse(WOResponse aResponse, WOContext aContext) {
-		if(Various.boolForObject(valueForBinding("hide", aContext)))
-			return;
+    public void appendToResponse(WOResponse aResponse, WOContext aContext) {
+    	if(Various.boolForObject(valueForBinding("hide", aContext)))
+    		return;
     	NSMutableArray bindingsList = bindingKeys().mutableClone();
     	String tagName = (String)valueForBinding("elementName",aContext);
     	bindingsList.removeObject("elementName");
     	//String action = (String)valueForBinding("action");
     	bindingsList.removeObject("invokeAction");
     	String onclick = null;
-   		boolean disabled = Various.boolForObject(valueForBinding("disabled",aContext));
+    	boolean disabled = Various.boolForObject(valueForBinding("disabled",aContext));
     	bindingsList.removeObject("disabled");
     	if(!disabled) {
     		onclick = (String)valueForBinding("onclick",aContext);
@@ -64,8 +64,8 @@ public class OnClickContainer extends ExtDynamicElement {
     	}
     	if(onclick == null)
     		disabled = true;
-   		bindingsList.removeObject("onclick");
-    	
+    	bindingsList.removeObject("onclick");
+
     	aResponse.appendContentCharacter('<');
     	aResponse.appendContentString(tagName);
     	if(!disabled) {
@@ -76,34 +76,40 @@ public class OnClickContainer extends ExtDynamicElement {
     			point = "get(this,'" + point + "')";
     		}
     		aResponse.appendContentString(" onmouseover=\"dim(");
-			aResponse.appendContentString(point);
+    		aResponse.appendContentString(point);
     		aResponse.appendContentString(");\" onmouseout=\"unDim(");
-			aResponse.appendContentString(point);
+    		aResponse.appendContentString(point);
     		aResponse.appendContentString(");\" onclick=\"");
     		aResponse.appendContentString(onclick);
-			aResponse.appendContentCharacter('"');
+    		aResponse.appendContentCharacter('"');
     	}
     	Enumeration enu = bindingsList.objectEnumerator();
     	while (enu.hasMoreElements()) {
-			String cur = (String) enu.nextElement();
-			Object value = valueForBinding(cur,aContext);
-			if(value != null) {
-				aResponse.appendContentCharacter(' ');
-				aResponse.appendContentString(cur);
-				aResponse.appendContentCharacter('=');
-				aResponse.appendContentCharacter('"');
-				aResponse.appendContentString(value.toString());
-				aResponse.appendContentCharacter('"');
-			}
-		}
+    		String cur = (String) enu.nextElement();
+    		Object value = valueForBinding(cur,aContext);
+    		if(value != null) {
+    			aResponse.appendContentCharacter(' ');
+    			aResponse.appendContentString(cur);
+    			aResponse.appendContentCharacter('=');
+    			aResponse.appendContentCharacter('"');
+    			aResponse.appendContentString(value.toString());
+    			aResponse.appendContentCharacter('"');
+    		}
+    	}
     	aResponse.appendContentCharacter('>');
     	super.appendToResponse(aResponse, aContext);
     	aResponse.appendContentString("</");
     	aResponse.appendContentString(tagName);
     	aResponse.appendContentCharacter('>');
-    	
-     }
-    
+
+    }
+
+    public WOActionResults invokeAction(WORequest aRequest, WOContext aContext) {
+    	if(Various.boolForObject(valueForBinding("hide", aContext)))
+    		return null;
+    	return super.invokeAction(aRequest, aContext);
+    }
+	
 /*    public WOActionResults invokeAction(WORequest aRequest, WOContext aContext) {
     	if(aContext.elementID().equals(aContext.senderID())) {
     		return (WOActionResults)valueForBinding("invokeAction",aContext);

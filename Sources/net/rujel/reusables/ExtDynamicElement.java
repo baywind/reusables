@@ -51,6 +51,8 @@ public class ExtDynamicElement extends WODynamicElement {
 	public WOActionResults invokeAction(WORequest aRequest, WOContext aContext) {
     	if(aContext.elementID().equals(aContext.senderID()))
     		return action(aContext);
+    	if(!aContext.senderID().startsWith(aContext.elementID() + '.'))
+    		return null;
 		if(children != null)
 			return children.invokeAction(aRequest, aContext);
 		return null;
