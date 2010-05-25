@@ -151,7 +151,9 @@ public class PlistReader extends SettingsReader implements Cloneable {
 		try {
 			FileInputStream fis = new FileInputStream(filePath);
 			return readPlist(fis, encoding);
-		} catch (java.io.IOException ioex) {
+		} catch (java.io.FileNotFoundException e) {
+			return null;
+		} catch (Exception ioex) {
 			System.err.println("Error reading plist " + filePath + 
 					" using encoding " + encoding);
 			ioex.printStackTrace(System.err);
