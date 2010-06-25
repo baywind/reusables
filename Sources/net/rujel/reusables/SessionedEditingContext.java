@@ -42,7 +42,7 @@ public class SessionedEditingContext extends EOEditingContext {
 	protected Counter failures = new Counter();
 	
 	public SessionedEditingContext (WOSession ses){
-			super((ses.objectForKey("objectStore")!=null)?
+		super((ses.objectForKey("objectStore")!=null)?
 					(EOObjectStore)ses.objectForKey("objectStore"):
 						EOObjectStoreCoordinator.defaultCoordinator());
 		if (ses == null) throw new 
@@ -53,14 +53,18 @@ public class SessionedEditingContext extends EOEditingContext {
 			((MultiECLockManager.Session)ses).ecLockManager().registerEditingContext(this);
 	}
 	
-	public SessionedEditingContext (EOObjectStore parent,WOSession ses){
+	public SessionedEditingContext (EOObjectStore parent,WOSession ses, boolean reg) {
 		super(parent);
 		if (ses == null) throw new 
 			NullPointerException (
 					"You should define a session to instantiate SessionedEditingContext");
 		session = ses;
-		if(ses instanceof MultiECLockManager.Session)
+		if(reg && ses instanceof MultiECLockManager.Session)
 			((MultiECLockManager.Session)ses).ecLockManager().registerEditingContext(this);
+	}
+	
+	public SessionedEditingContext (EOObjectStore parent,WOSession ses) {
+		this(parent,ses,true);
 	}
 	
 	public WOSession session() {
@@ -125,6 +129,8 @@ public class SessionedEditingContext extends EOEditingContext {
 	       super.unlock();
 	       if (_stackTraces.count() > 0)
 	           _stackTraces.removeLastObject();
+	       else
+	    	   _stackTraces.count();
 	       if (_stackTraces.count() == 0)
 	           _nameOfLockingThread = null;
 	   }

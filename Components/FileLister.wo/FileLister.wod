@@ -22,3 +22,40 @@ Link : WOGenericContainer {
 IsStandalone : WOConditional {
   condition = standalone;
 }
+
+ActionTitle : WOString {
+  value = actionTitle;
+  escapeHTML = false;
+}
+
+Act : OnClickContainer {
+  elementName = "td";
+  align = "right";
+  invokeAction = perform;
+  disabled = session.readAccess._edit.CompleteSetup;
+  title = actionHover;
+}
+
+Standalone : WOConditional {
+  condition = standalone;
+}
+
+Delete : OnClickContainer {
+  elementName = "td";
+  hide = session.readAccess._delete.CompleteSetup;
+  onclick = session.confirmMessage;
+  invokeAction = delete;
+  title = session.strings.Reusables_Strings.uiElements.Delete;
+}
+
+Cross : WOImage {
+  framework = "RujelBase";
+  filename = "cross.png";
+  align = "right";
+  height = 12;
+  width = 12;
+  alt = session.strings.Reusables_Strings.uiElements.Delete;
+}
+Dir : WOConditional {
+  condition = item.isDirectory;
+}

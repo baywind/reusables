@@ -30,12 +30,17 @@
 package net.rujel.reusables;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FilenameFilter;
+import java.util.Calendar;
+import java.util.logging.Logger;
 
 import com.webobjects.appserver.WOActionResults;
 import com.webobjects.appserver.WOApplication;
 import com.webobjects.appserver.WOContext;
 import com.webobjects.appserver.WOComponent;
 import com.webobjects.appserver.WORequestHandler;
+import com.webobjects.appserver.WOResponse;
 import com.webobjects.foundation.NSArray;
 
 public class FileLister extends WOComponent {
@@ -56,7 +61,13 @@ public class FileLister extends WOComponent {
     }
     
     public NSArray files() {
-    	return new NSArray(file.listFiles());
+    	File[] list = file.listFiles(new FilenameFilter() {
+			public boolean accept(File dir, String name) {
+				char c = name.charAt(0);
+				return (c != '.' && c != '_');
+			}
+		});
+    	return new NSArray(list);
     }
     
     public void setFilePath(String filePath) {
@@ -87,7 +98,8 @@ public class FileLister extends WOComponent {
     }
     
     public boolean disableLink() {
-    	return (!standalone() && justNavigate && file.isFile());
+    	return (!standalone() && justNavigate || 
+    			item.isFile() && !item.getName().endsWith(".zip"));
     }
     
     public WOActionResults open() {
@@ -95,6 +107,94 @@ public class FileLister extends WOComponent {
     	setValueForBinding(item, "file");
     	return null;
     }
+    
+    public String actionHover() {
+    	if(item.isDirectory())
+    		return (String)session().valueForKeyPath(
+    				"strings.Reusables_Strings.uiElements.Archive");
+    	else
+    		return (String)session().valueForKeyPath(
+					"strings.Reusables_Strings.uiElements.Save");
+    }    
+    
+    public String actionTitle() {
+    	if(item.isDirectory())
+    		return "zip";
+    	long size = item.length();
+    	char[] letter = new char[] {'b','K','M','G','T'};
+    	StringBuilder buf = new StringBuilder();
+    	int extra = 0;
+    	for (int i = 0; i < letter.length; i++) {
+			if(size < 1024) {
+				if(size < 64) {
+					buf.append(size);
+					if(extra >= 100) {
+						buf.append('.');
+						buf.append(extra / 100);
+					}
+				} else {
+					if(extra > 512)
+						size++;
+					buf.append(size);
+				}
+				buf.append(' ').append(letter[i]);
+				break;
+			}
+			extra = (int)(size % 1024);
+			size = size >> 10;
+		}
+    	if(buf.length() == 0)
+    		buf.append("&infin;");
+    	return buf.toString();
+    }
+    
+	public WOActionResults perform() {
+		if(item.isDirectory()) {
+			StringBuilder buf = new StringBuilder(item.getName());
+			buf.append('z');
+			Calendar cal = Calendar.getInstance();
+			buf.append(cal.get(Calendar.YEAR));
+			int idx = cal.get(Calendar.MONTH);
+			if(idx < 10)
+				buf.append('0');
+			buf.append(idx);
+			idx = cal.get(Calendar.DAY_OF_MONTH);
+			if(idx < 10)
+				buf.append('0');
+			buf.append(idx);
+			buf.append(".zip");
+			File zip = new File(file,buf.toString());
+			if(file.exists())
+				file.delete();
+			Thread thread = new Thread(new FileWriterUtil.Zipper(item, zip),"Zipper");
+			thread.setPriority(Thread.MIN_PRIORITY + 1);
+			thread.start();
+		} else {
+			try {
+				WOResponse response = application().createResponseInContext(context()); 
+				String conType = application().resourceManager().
+						contentTypeForResourceNamed(item.getName());
+				response.setHeader(conType,"Content-Type");
+				FileInputStream fis = new FileInputStream(item);
+				response.setContentStream(fis,4096,item.length());
+				StringBuilder buf = new StringBuilder("attachment; filename=\"");
+				buf.append(item.getName()).append('"');
+				response.setHeader(buf.toString(),"Content-Disposition");
+				response.disableClientCaching();
+				return response;
+			} catch (Exception e) {
+				session().takeValueForKey(e.getMessage(), "message");
+				Logger.getLogger("rujel.reusables").log(WOLogLevel.WARNING,
+						"Error reading file " + item, new Object[] {session(),e});
+			}
+		}
+		return null;
+	}
+	
+	public WOActionResults delete() {
+		item.delete();
+		return null;
+	}
     
     public boolean standalone() {
     	return context().page() == this;
@@ -107,7 +207,7 @@ public class FileLister extends WOComponent {
 	public boolean synchronizesVariablesWithBindings() {
         return true;
 	}
-	
+		
 	public void reset() {
 		super.reset();
 		file = null;
