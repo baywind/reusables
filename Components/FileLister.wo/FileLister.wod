@@ -16,7 +16,7 @@ Link : WOGenericContainer {
   href = href;
   omitTags = disableLink;
   invokeAction = open;
-  target = target;
+  target = ^target;
 }
 
 IsStandalone : WOConditional {
@@ -32,7 +32,7 @@ Act : OnClickContainer {
   elementName = "td";
   align = "right";
   invokeAction = perform;
-  disabled = session.readAccess._edit.CompleteSetup;
+  disabled = ^noAction;
   title = actionHover;
 }
 
@@ -42,8 +42,8 @@ Standalone : WOConditional {
 
 Delete : OnClickContainer {
   elementName = "td";
-  hide = session.readAccess._delete.CompleteSetup;
-  onclick = session.confirmMessage;
+  hide = ^noDelete;
+  onclick = onDelClick;
   invokeAction = delete;
   title = session.strings.Reusables_Strings.uiElements.Delete;
 }
@@ -54,7 +54,7 @@ Cross : WOImage {
   align = "right";
   height = 12;
   width = 12;
-  alt = session.strings.Reusables_Strings.uiElements.Delete;
+  alt = "delete";
 }
 Dir : WOConditional {
   condition = item.isDirectory;

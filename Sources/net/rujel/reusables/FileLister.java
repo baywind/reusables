@@ -39,6 +39,7 @@ import com.webobjects.appserver.WOActionResults;
 import com.webobjects.appserver.WOApplication;
 import com.webobjects.appserver.WOContext;
 import com.webobjects.appserver.WOComponent;
+import com.webobjects.appserver.WOElement;
 import com.webobjects.appserver.WORequestHandler;
 import com.webobjects.appserver.WOResponse;
 import com.webobjects.foundation.NSArray;
@@ -46,8 +47,10 @@ import com.webobjects.foundation.NSArray;
 public class FileLister extends WOComponent {
 	public File file;
 	public File item;
-	public String target;
+//	public String target;
 	protected boolean justNavigate = false;
+//	public boolean noDelete;
+//	public boolean noAction;
 	
 	static {
 		WOApplication app = WOApplication.application();
@@ -58,6 +61,20 @@ public class FileLister extends WOComponent {
 	
     public FileLister(WOContext context) {
         super(context);
+    }
+    
+    public WOElement template() {
+    	if(parent() != null) {
+    		if(file == null)
+    			file = (File)valueForBinding("file");
+    		if(file == null) {
+    			String filename = (String)valueForBinding("filePath");
+    			if(filename != null)
+    				file = new File(filename);
+    		}
+    		setJustNavigate(valueForBinding("justNavigate"));
+    	}
+    	return super.template();
     }
     
     public NSArray files() {
@@ -103,7 +120,7 @@ public class FileLister extends WOComponent {
     }
     
     public WOActionResults open() {
-    	file = item;
+//    	file = item;
     	setValueForBinding(item, "file");
     	return null;
     }
@@ -191,6 +208,14 @@ public class FileLister extends WOComponent {
 		return null;
 	}
 	
+	public String onDelClick() {
+		StringBuilder buf = new StringBuilder("if(confirm('");
+		buf.append(session().valueForKeyPath("strings.Reusables_Strings.uiElements.Delete"));
+		buf.append("?'))window.location='");
+		buf.append(context().componentActionURL()).append("';");
+		return buf.toString();
+	}
+	
 	public WOActionResults delete() {
 		item.delete();
 		return null;
@@ -205,14 +230,16 @@ public class FileLister extends WOComponent {
 	}
 	
 	public boolean synchronizesVariablesWithBindings() {
-        return true;
+        return false;
 	}
 		
 	public void reset() {
 		super.reset();
+//		noAction = Various.boolForObject(valueForBinding("noAction"));
+//		noDelete = Various.boolForObject(valueForBinding("noDelete"));
 		file = null;
 		item = null;
 		justNavigate = false;
-		target = null;
+//		target = null;
 	}
 }

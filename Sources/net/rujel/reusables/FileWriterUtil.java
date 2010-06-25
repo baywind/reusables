@@ -228,13 +228,10 @@ public class FileWriterUtil implements java.io.Closeable {
 
 		public void run() {
 			try {
+				File tmp = new File(target.getParentFile(),target.getName() + ".tmp");
+				zip = new ZipOutputStream(new FileOutputStream(tmp));
 				if(target.exists())
 					target.delete();
-				StringBuilder name = new StringBuilder(28);
-				name.append('_').append(target.getName());
-				File tmp = new File(target.getParentFile(),name.toString());
-				zip = new ZipOutputStream(new FileOutputStream(tmp));
-				name = null;
 				path = new StringBuilder();
 				recurse(folder);
 				zip.close();
