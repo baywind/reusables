@@ -180,7 +180,7 @@ public class FileWriterUtil implements java.io.Closeable {
 				throw new NSForwardException(e);
 			}
     	} else {
-    		File folder = (root)?base:(File)curDir;
+    		File folder = (root || curDir == null)?base:(File)curDir;
     		folder = new File(folder,dirName);
     		if(!folder.exists())
     			folder.mkdirs();
