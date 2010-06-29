@@ -195,6 +195,8 @@ public class FileLister extends WOComponent {
 			buf.append(idx);
 			buf.append(".zip");
 			File zip = new File(file,buf.toString());
+			Logger.getLogger("rujel.reusables").log(WOLogLevel.INFO,
+					"Creating ZIP file: " + item + " -> " + zip,session());
 			if(file.exists())
 				file.delete();
 			Thread thread = new Thread(new FileWriterUtil.Zipper(item, zip),"Zipper");
@@ -231,10 +233,23 @@ public class FileLister extends WOComponent {
 	}
 	
 	public WOActionResults delete() {
-		item.delete();
+		Logger.getLogger("rujel.reusables").log(WOLogLevel.INFO,
+				"Deleting file " + item, session());
+		dirDelete(item);
 		return null;
 	}
     
+	public static boolean dirDelete(File file) {
+		if(file.isDirectory()) {
+			File[] dir = file.listFiles();
+			for (int i = 0; i < dir.length; i++) {
+				if(!dirDelete(dir[i]))
+					break;
+			}
+		}
+		return file.delete();
+	}
+	
     public boolean standalone() {
     	return context().page() == this;
     }
