@@ -4,7 +4,8 @@
         <binding name="filePath"/>
     <binding defaults="Boolean" name="justNavigate"/>
     <binding name="target"/>
-    <binding defaults="Boolean" name="noDelete"/>
-        <binding defaults="Boolean" name="noAction"/>
+    
+        
+    <binding name="access"/>
     </wo>
 </wodefinitions>

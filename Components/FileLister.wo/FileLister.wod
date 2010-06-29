@@ -32,7 +32,7 @@ Act : OnClickContainer {
   elementName = "td";
   align = "right";
   invokeAction = perform;
-  disabled = ^noAction;
+  disabled = access._edit;
   title = actionHover;
 }
 
@@ -42,7 +42,7 @@ Standalone : WOConditional {
 
 Delete : OnClickContainer {
   elementName = "td";
-  hide = ^noDelete;
+  hide = access._delete;
   onclick = onDelClick;
   invokeAction = delete;
   title = session.strings.Reusables_Strings.uiElements.Delete;

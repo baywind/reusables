@@ -51,6 +51,7 @@ public class FileLister extends WOComponent {
 	protected boolean justNavigate = false;
 //	public boolean noDelete;
 //	public boolean noAction;
+	public NamedFlags access;
 	
 	static {
 		WOApplication app = WOApplication.application();
@@ -73,6 +74,11 @@ public class FileLister extends WOComponent {
     				file = new File(filename);
     		}
     		setJustNavigate(valueForBinding("justNavigate"));
+    		access = (NamedFlags)valueForBinding("access");
+    		if(access == null)
+    			access = DegenerateFlags.ALL_TRUE;
+    	} else {
+    		access = DegenerateFlags.ALL_FALSE;
     	}
     	return super.template();
     }
@@ -115,8 +121,11 @@ public class FileLister extends WOComponent {
     }
     
     public boolean disableLink() {
-    	return (!standalone() && justNavigate || 
-    			item.isFile() && !item.getName().endsWith(".zip"));
+    	if(standalone())
+    		return false;
+    	if(item.isDirectory())
+    		return false;
+    	return (justNavigate || !item.getName().endsWith(".zip"));
     }
     
     public WOActionResults open() {
@@ -126,6 +135,8 @@ public class FileLister extends WOComponent {
     }
     
     public String actionHover() {
+    	if(!access.flagForKey("edit"))
+    		return null;
     	if(item.isDirectory())
     		return (String)session().valueForKeyPath(
     				"strings.Reusables_Strings.uiElements.Archive");
@@ -135,8 +146,11 @@ public class FileLister extends WOComponent {
     }    
     
     public String actionTitle() {
-    	if(item.isDirectory())
+    	if(item.isDirectory()) {
+    		if(standalone())
+    			return null;
     		return "zip";
+    	}
     	long size = item.length();
     	char[] letter = new char[] {'b','K','M','G','T'};
     	StringBuilder buf = new StringBuilder();
