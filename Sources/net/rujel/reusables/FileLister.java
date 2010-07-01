@@ -227,6 +227,7 @@ public class FileLister extends WOComponent {
 	public String onDelClick() {
 		StringBuilder buf = new StringBuilder("if(confirm('");
 		buf.append(session().valueForKeyPath("strings.Reusables_Strings.uiElements.Delete"));
+		buf.append(' ').append(item.getName());
 		buf.append("?'))window.location='");
 		buf.append(context().componentActionURL()).append("';");
 		return buf.toString();
