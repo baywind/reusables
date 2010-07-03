@@ -216,7 +216,8 @@ public class DataBaseConnector {
 			if(cd.count() > 0) {
 				try {
 					ec.lock();
-					EODatabaseContext.forceConnectionWithModel(model, cd, ec);
+					EODatabaseContext dc = EODatabaseContext.forceConnectionWithModel(model, cd, ec);
+					dc.availableChannel();
 					String message = "Model '" + model.name() + "' connected to database";
 					if(url != null)
 						message = message + '\n' + url;
@@ -231,7 +232,7 @@ public class DataBaseConnector {
 //						mg.removeModel(model);
 					} else {
 						logger.log(WOLogLevel.WARNING, message, e);
-						success = false;
+						boolean ok = false;
 						if(url != null) {
 							String untagged = (currSettings==null)?null:
 								currSettings.get("untagged", null);
@@ -239,11 +240,12 @@ public class DataBaseConnector {
 								url = url.replaceFirst(dbName, untagged);
 								cd.takeValueForKey(url, "URL");
 								try {
-									EODatabaseContext.forceConnectionWithModel(model, cd, ec);
+									EODatabaseContext.forceConnectionWithModel(model, cd, ec).
+										availableChannel();
 									message = "Model '" + model.name() +
 											"' connected to untagged database" + '\n' + url;
 									logger.config(message);
-									success = true;
+									ok = true;
 								} catch (Exception ex) {
 									message = "Model '" + model.name() + 
 									"' also could not connect to database" + '\n' + url;
@@ -251,29 +253,33 @@ public class DataBaseConnector {
 								}
 							}
 						}
+						success = success && ok;
 					}
 				} finally {
 					ec.unlock();
 				}
 			}
 		} // while (models.hasMoreElements())
-		if(success && tag != null && os != null) {
+		if(tag != null && os != null) {
+			Object store = (success)?os: NSKeyValueCoding.NullValue;
 			if(coordinatorsByTag == null)
-				coordinatorsByTag = new NSMutableDictionary(os,tag);
+				coordinatorsByTag = new NSMutableDictionary(store,tag);
 			else
-				coordinatorsByTag.takeValueForKey(os, tag);
+				coordinatorsByTag.takeValueForKey(store, tag);
 		}
 		ec.dispose();
 		return success;
 	}
 	
 	public static EOObjectStore objectStoreForTag(String tag) {
-		EOObjectStore os = (EOObjectStore)coordinatorsByTag.valueForKey(tag);
+		Object os = coordinatorsByTag.valueForKey(tag);
 		if(os == null) {
 			os = new EOObjectStoreCoordinator();
-			if(!makeConnections(os, tag))
+			if(!makeConnections((EOObjectStore)os, tag))
 				return null;
+		} else if(os == NSKeyValueCoding.NullValue) {
+			return null;
 		}
-		return os;
+		return (EOObjectStore)os;
 	}
 }
