@@ -32,6 +32,7 @@ package net.rujel.reusables;
 //import java.util.prefs.*;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FilenameFilter;
 import java.lang.reflect.Method;
 import com.webobjects.foundation.*;
 import com.webobjects.eocontrol.EOSortOrdering;
@@ -89,7 +90,13 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 		} else {
 			String filePath = (pref == null)?"modules":pref.toString();
 			File folder = new File(Various.convertFilePath(filePath));
-			File[] list = folder.listFiles();
+			File[] list = folder.listFiles(new FilenameFilter() {
+				public boolean accept(File dir, String name) {
+					if(name.charAt(0) == '.')
+						return false;
+					return name.endsWith(".plist");
+				}
+			});
 			String encoding = System.getProperty("PlistReader.encoding","utf8");
 			NSMutableArray plists = new NSMutableArray();
 			for (int i = 0; i < list.length; i++) {
