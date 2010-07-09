@@ -31,6 +31,7 @@ package net.rujel.reusables;
 
 import java.util.Enumeration;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -41,6 +42,15 @@ import com.webobjects.foundation.*;
 public class PlistReader extends SettingsReader implements Cloneable {
 	
 	public static final String LinkKey = "thisIsPlistLink";
+	
+	public static final FileFilter Filter = new FileFilter() {
+		public boolean accept(File file) {
+			if(!file.isFile())
+				return false;
+			String name = file.getName();
+			return (name.charAt(0) != '.' && name.endsWith(".plist"));
+		}
+	};
 	
 	protected NSDictionary pref;
 	protected File inputFile;
