@@ -44,8 +44,7 @@ public class CompoundPKeyGenerator {
 		NSArray pKeys = entity.primaryKeyAttributeNames();
 		if(pKeys == null || pKeys.count() < 2)
 			return null;
-		return compoundKey((EOEnterpriseObject)object,
-				entity.primaryKeyAttributeNames(),entity.relationships());
+		return compoundKey((EOEnterpriseObject)object,pKeys,entity.relationships());
 	}
 
 	public static NSDictionary compoundKey(EOEnterpriseObject eo) {
@@ -56,7 +55,8 @@ public class CompoundPKeyGenerator {
 		return compoundKey(eo, pKeys, relationships);
 	}
 	
-	public static NSDictionary compoundKey(EOEnterpriseObject eo, NSArray pKeys,NSArray relationships) {
+	public static NSDictionary compoundKey(EOEnterpriseObject eo, 
+					NSArray pKeys,NSArray relationships) {
 		if(pKeys == null || pKeys.count() <= 1)
 			return null;
 		EOEditingContext ec = eo.editingContext();
