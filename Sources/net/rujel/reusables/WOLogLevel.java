@@ -46,9 +46,9 @@ public class WOLogLevel extends Level {
 	
 	public static final WOLogLevel MASS_READING = new WOLogLevel("MASS_READING",725);
 	
-	public static final WOLogLevel UNOWNED_EDITING = new WOLogLevel("UNOWNED_EDITING",550);
+	public static final WOLogLevel EDITING = new WOLogLevel("EDITING",550);
 	
-	public static final WOLogLevel OWNED_EDITING = new WOLogLevel("OWNED_EDITING",500);
+//	public static final WOLogLevel OWNED_EDITING = new WOLogLevel("OWNED_EDITING",500);
 	
 	public static final WOLogLevel READING = new WOLogLevel("READING",450);
 	
