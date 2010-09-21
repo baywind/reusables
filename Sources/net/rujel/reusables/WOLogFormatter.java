@@ -113,8 +113,24 @@ public class WOLogFormatter extends Formatter {
 		} else if(t instanceof NSValidation.ValidationException) {
 			NSValidation.ValidationException vex = (NSValidation.ValidationException)t;
 			if(html) toAppend.append("<br/>");
-			toAppend.append('\n').append(vex.key()).append(" =\t");
-			formatObject(vex.object(), toAppend);
+			toAppend.append('\n');
+			String key = vex.key();
+			Object obj = vex.object();
+			if(key != null) {
+				if(obj == null)
+					toAppend.append("key: ");
+				toAppend.append(key);
+			}
+			if(obj != null) {
+				try {
+					Object value = NSKeyValueCoding.Utility.valueForKey(obj, key);
+					toAppend.append(" =\t");
+					formatObject(value, toAppend);
+				} finally {
+					toAppend.append("\tin ");
+					formatObject(obj, toAppend);
+				}
+			}
 		}
 		return toAppend;
 	}
