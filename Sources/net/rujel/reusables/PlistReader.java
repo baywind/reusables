@@ -109,12 +109,13 @@ public class PlistReader extends SettingsReader implements Cloneable {
 
 	public void refresh() {
 		if(inputFile == null){
-			System.err.println("No input filePath specified for reading preferences");
-			return;
+			throw new IllegalArgumentException(
+					"No input filePath specified for reading preferences");
 		}
 		if(!inputFile.canRead()) {
-			System.err.println("Specified file does not exisi or can't be read");
-			return;
+			throw new IllegalStateException(
+					"Specified preferences file does not exist or can not be read: "
+					+ inputFile);
 		}
 		try {
 			rootDict = (NSDictionary)readPlist(new FileInputStream(inputFile), encoding);

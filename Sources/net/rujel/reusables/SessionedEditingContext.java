@@ -94,6 +94,11 @@ public class SessionedEditingContext extends EOEditingContext {
 					_nameOfLockingThread + " : " + _stackTraces.count() + ')', new Object[] 
 					             {session, new Exception(), _stackTraces});		
 	}
+	
+	public void revert() {
+		super.revert();
+	}
+	
 	public void dispose() {
 		fin();
 		super.dispose();

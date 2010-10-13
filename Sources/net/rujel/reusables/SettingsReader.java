@@ -45,7 +45,7 @@ public abstract class SettingsReader implements NSKeyValueCodingAdditions {
 				_root = constructor.newInstance();
 			} catch (Exception ex) {
 				String message = "Failed constructing SettingsReader class:" + className;
-				System.out.println(message);
+				System.err.println(message);
 				throw new NSForwardException(ex,message);
 			}
 		}
