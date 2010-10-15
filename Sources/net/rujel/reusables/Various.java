@@ -30,6 +30,7 @@
 package net.rujel.reusables;
 
 import com.webobjects.foundation.*;
+import com.webobjects.eoaccess.EOUtilities;
 import com.webobjects.eocontrol.*;
 
 import java.io.File;
@@ -59,7 +60,8 @@ public class Various {
 		NSMutableArray quals = new NSMutableArray();
 		Enumeration en = values.objectEnumerator();
 		while (en.hasMoreElements()) {
-			quals.addObject(new EOKeyValueQualifier(key,EOQualifier.QualifierOperatorEqual,en.nextElement()));
+			quals.addObject(new EOKeyValueQualifier(key,
+					EOQualifier.QualifierOperatorEqual,en.nextElement()));
 		}
 		return new EOOrQualifier(quals);
 	}
@@ -141,5 +143,104 @@ public class Various {
 		if(File.separatorChar != '/')
 			filePath = filePath.replace('/', File.separatorChar);
 		return filePath;
+	}
+	
+	public static EOEnterpriseObject parseEO(String string, EOEditingContext ec) {
+		int idx = string.indexOf(':');
+		if(idx < 0)
+			throw new IllegalArgumentException("Wrong string format");
+		String entity = string.substring(0,idx);
+		string = string.substring(idx +1);
+		try {
+			Integer pk = new Integer(string);
+			return EOUtilities.objectWithPrimaryKeyValue(ec, entity, pk);
+		} catch (NumberFormatException e) {
+			NSDictionary pKey = NSPropertyListSerialization.dictionaryForString(string);
+			return EOUtilities.objectWithPrimaryKey(ec, entity, pKey);
+		}
+	}
+	
+	public static NSMutableArray argumentsFromString(String string, EOEditingContext ec) {
+		NSArray list = NSPropertyListSerialization.arrayForString(string);
+		NSMutableArray args = new NSMutableArray(list.count());
+		Enumeration enu = list.objectEnumerator();
+		while (enu.hasMoreElements()) {
+			Object obj = (Object) enu.nextElement();
+			if(obj instanceof String) {
+				try {
+					obj = new Integer((String)obj);
+				} catch (NumberFormatException e) {
+					try {
+						obj = parseEO((String)obj, ec);
+					} catch (Exception ex) {
+						; //string may not be parsed
+					}
+				}
+			}
+			args.addObject(obj);
+		}
+		return args;
+	}
+	
+	public static String stringFromArguments(NSArray arguments) {
+		NSMutableArray result = new NSMutableArray(arguments.count());
+		Enumeration enu = arguments.objectEnumerator();
+		while (enu.hasMoreElements()) {
+			Object obj = (Object) enu.nextElement();
+			if(obj instanceof EOEnterpriseObject) {
+				obj = WOLogFormatter.formatEO((EOEnterpriseObject)obj);
+			} else if(obj == NSKeyValueCoding.NullValue) {
+				obj = "nil";
+			}
+			result.addObject(obj);
+		}
+		return NSPropertyListSerialization.stringFromPropertyList(result);
+	}
+	
+	public static void formatQualifier(EOQualifier qual, StringBuilder buf, NSMutableArray args) {
+		if(qual instanceof EOKeyValueQualifier) {
+			EOKeyValueQualifier kq = (EOKeyValueQualifier)qual;
+			buf.append(kq.key()).append(' ');
+			buf.append(EOQualifier.stringForOperatorSelector(kq.selector()));
+			Object value = kq.value();
+			if(value == null) {
+				buf.append(" nil");
+			} else {
+				if(value instanceof EOEnterpriseObject)
+					value = WOLogFormatter.formatEO((EOEnterpriseObject)value);
+				buf.append(" %@");
+				args.addObject(value);
+			}
+		} else if(qual instanceof EOKeyComparisonQualifier) {
+			EOKeyComparisonQualifier cq = (EOKeyComparisonQualifier)qual;
+			buf.append(cq.leftKey()).append(' ');
+			buf.append(EOQualifier.stringForOperatorSelector(cq.selector()));
+			buf.append(' ').append(cq.rightKey());
+		} else if(qual instanceof EONotQualifier) {
+			buf.append("!(");
+			formatQualifier(((EONotQualifier)qual).qualifier(), buf, args);
+			buf.append(')');
+		} else if(qual instanceof EOAndQualifier || qual instanceof EOOrQualifier) {
+			NSArray list = null;
+			String operator = null;
+			if(qual instanceof EOAndQualifier) {
+				list = ((EOAndQualifier)qual).qualifiers();
+				operator = " AND ";
+			} else {
+				list = ((EOOrQualifier)qual).qualifiers();
+				operator = " OR ";
+			}
+			buf.append('(');
+			Enumeration enu = list.objectEnumerator();
+			while (enu.hasMoreElements()) {
+				EOQualifier qq = (EOQualifier) enu.nextElement();
+				formatQualifier(qq, buf, args);
+				if(enu.hasMoreElements())
+					buf.append(operator);
+			}
+			buf.append(')');
+		} else {
+			throw new IllegalArgumentException("Unsupported qualifier type");
+		}
 	}
 }
