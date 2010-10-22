@@ -206,9 +206,19 @@ public class Various {
 			if(value == null) {
 				buf.append(" nil");
 			} else {
-				if(value instanceof EOEnterpriseObject)
+				buf.append(' ').append('%');
+				if(value instanceof EOEnterpriseObject) {
 					value = WOLogFormatter.formatEO((EOEnterpriseObject)value);
-				buf.append(" %@");
+					buf.append('@');
+				} else if(value instanceof Integer) {
+					buf.append('d');
+				} else if(value instanceof Number) {
+					buf.append('f');
+				} else if(value instanceof String) {
+					buf.append('s');
+				} else {
+					buf.append('@');
+				}
 				args.addObject(value);
 			}
 		} else if(qual instanceof EOKeyComparisonQualifier) {

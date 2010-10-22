@@ -181,7 +181,9 @@ public class DisplayAny extends ExtDynamicElement {
 		if(value != null) {
 			aResponse.appendContentString(value.toString());
 		} else {
+			if(dict == null) return;
 			WOElement presenter = getPresenter(dict);
+			if(presenter == null) return;
 			presenter.appendToResponse(aResponse, aContext);
 		}
 	}
