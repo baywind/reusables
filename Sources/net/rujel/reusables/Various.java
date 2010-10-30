@@ -240,15 +240,18 @@ public class Various {
 				list = ((EOOrQualifier)qual).qualifiers();
 				operator = " OR ";
 			}
-			buf.append('(');
 			Enumeration enu = list.objectEnumerator();
 			while (enu.hasMoreElements()) {
 				EOQualifier qq = (EOQualifier) enu.nextElement();
+				boolean sub = (qq instanceof EOAndQualifier || qq instanceof EOOrQualifier);
+				if(sub)
+					buf.append('(');
 				formatQualifier(qq, buf, args);
+				if(sub)
+					buf.append(')');
 				if(enu.hasMoreElements())
 					buf.append(operator);
 			}
-			buf.append(')');
 		} else {
 			throw new IllegalArgumentException("Unsupported qualifier type");
 		}

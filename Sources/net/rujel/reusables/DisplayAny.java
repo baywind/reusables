@@ -163,8 +163,12 @@ public class DisplayAny extends ExtDynamicElement {
 			
 			if(value == null) {
 				value = valueForBinding("value", aContext);
-				if(value == null)
+				if(value == null) {
+					value = valueForBinding("valueWhenEmpty", aContext);
+					if(value != null)
+						aResponse.appendContentString(value.toString());
 					return;
+				}
 				String path = (String)dict.valueForKey("titlePath");
 				if(path != null)
 					value = NSKeyValueCodingAdditions.Utility.valueForKeyPath(value, path);
@@ -181,9 +185,19 @@ public class DisplayAny extends ExtDynamicElement {
 		if(value != null) {
 			aResponse.appendContentString(value.toString());
 		} else {
-			if(dict == null) return;
+			if(dict == null) {
+				value = valueForBinding("valueWhenEmpty", aContext);
+				if(value != null)
+					aResponse.appendContentString(value.toString());
+				return;
+			}
 			WOElement presenter = getPresenter(dict);
-			if(presenter == null) return;
+			if(presenter == null) {
+				value = valueForBinding("valueWhenEmpty", aContext);
+				if(value != null)
+					aResponse.appendContentString(value.toString());
+				return;
+			}
 			presenter.appendToResponse(aResponse, aContext);
 		}
 	}

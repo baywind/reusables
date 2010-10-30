@@ -98,10 +98,11 @@ public class DynamicTableRow extends WOComponent {
 				&& valueForBinding("item").equals(valueForBinding("selection")));
 	}
 
-	public String style() {
-		if(!Various.boolForObject(valueForBinding("useStyles")))
+	public String styleClass() {
+		if(!(Various.boolForObject(valueForBinding("useStyles")) || hasBinding("class")))
 			return null;
-		String result = (isGerade())?"gerade":"ungerade";
+		String result = (hasBinding("class"))?(String)valueForBinding("class"):
+			(isGerade())?"gerade":"ungerade";
 		if ((hasBinding("isSelected"))?Various.boolForObject(valueForBinding("isSelected")):
 				valueForBinding("item").equals(valueForBinding("selection"))) {
 			result = "selection";
