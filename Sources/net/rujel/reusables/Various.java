@@ -203,7 +203,7 @@ public class Various {
 			buf.append(kq.key()).append(' ');
 			buf.append(EOQualifier.stringForOperatorSelector(kq.selector()));
 			Object value = kq.value();
-			if(value == null) {
+			if(value == null || value == NSKeyValueCoding.NullValue) {
 				buf.append(" nil");
 			} else {
 				buf.append(' ').append('%');
