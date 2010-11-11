@@ -216,12 +216,56 @@ public class DataBaseConnector {
 			if(cd.count() > 0) {
 				try {
 					ec.lock();
-					EODatabaseContext dc = EODatabaseContext.forceConnectionWithModel(model, cd, ec);
-					dc.availableChannel();
-					String message = "Model '" + model.name() + "' connected to database";
-					if(url != null)
-						message = message + '\n' + url;
-					logger.config(message);
+					EODatabaseContext dc = EODatabaseContext.forceConnectionWithModel(model,cd,ec);
+					NSDictionary modelInfo = model.userInfo();
+					if(modelInfo != null)
+						modelInfo = (NSDictionary)modelInfo.valueForKey("schemaVersion");
+					if(modelInfo != null) {
+						int modelNum = Integer.parseInt(modelInfo.valueForKey("number").toString());
+						NSDictionary schemaVersion = null;
+						dc.lock();
+						EOAdaptorChannel ac = dc.availableChannel().adaptorChannel();
+						StringBuilder buf = new StringBuilder(
+	"SELECT VERSION_NUMBER, VERSION_TITLE FROM SCHEMA_VERSION WHERE MODEL_NAME = '");
+						buf.append(model.name()).append(
+								"' ORDER BY VERSION_NUMBER DESC;");
+						EOSQLExpression expr = ac.adaptorContext().adaptor().
+						expressionFactory().expressionForString(buf.toString());
+						try {
+							ac.evaluateExpression(expr);
+							NSArray descResults = ac.describeResults();
+							EOAttribute attr = (EOAttribute)descResults.objectAtIndex(0);
+							attr.setName("number");
+							attr = (EOAttribute)descResults.objectAtIndex(1);
+							attr.setName("title");
+							ac.setAttributesToFetch(descResults);
+							schemaVersion = ac.fetchRow();
+						} catch (Exception e) {
+						} finally {
+							ac.cancelFetch();
+							dc.unlock();
+						}
+						buf.delete(0, buf.length());
+						buf.append("Model '").append(model.name()).append('\'');
+						int schemNum = (schemaVersion == null)?0:
+							((Number)schemaVersion.valueForKey("number")).intValue();
+						if(modelNum != schemNum) {
+							buf.append(" requires schema version ").append(modelNum);
+							buf.append('(').append(modelInfo.valueForKey("title")).append(')');
+							if(schemaVersion != null) {
+								buf.append(". found version ").append(schemNum).append('(');
+								buf.append(schemaVersion.valueForKey("title")).append(')');
+							}
+							logger.severe(buf.toString());
+							success = false;
+						}
+					}
+					if(success) {
+						String message = "Model '" + model.name() + "' connected to database";
+						if(url != null)
+							message = message + '\n' + url;
+						logger.config(message);
+					}
 				} catch (Exception e) {
 					String message = "Model '" + model.name() + 
 										"' could not connect to database";
