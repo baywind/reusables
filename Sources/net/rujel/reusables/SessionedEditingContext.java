@@ -95,8 +95,11 @@ public class SessionedEditingContext extends EOEditingContext {
 					             {session, new Exception(), _stackTraces});		
 	}
 	
+	protected boolean inRevert = false;
 	public void revert() {
+		inRevert = true;
 		super.revert();
+		inRevert = false;
 	}
 	
 	public void dispose() {
@@ -143,8 +146,8 @@ public class SessionedEditingContext extends EOEditingContext {
 	   public void insertObject(EOEnterpriseObject object) {
 		   super.insertObject(object);
 		   if(!globalIDForObject(object).isTemporary())
-			   logger.log(WOLogLevel.WARNING,"Inserting not new object",
-					   new Object[] {session,object, new Exception()});
+			   logger.log((inRevert)?WOLogLevel.FINER:WOLogLevel.INFO,
+					   "Inserting not new object",new Object[] {session,object, new Exception()});
 	   }
 
 }
