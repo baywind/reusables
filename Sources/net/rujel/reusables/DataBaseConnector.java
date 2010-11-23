@@ -214,24 +214,24 @@ public class DataBaseConnector {
 				cd.takeValueForKey(url, "URL");
 			}
 			if(cd.count() > 0) {
+				EODatabaseContext dc = null;
 				try {
 					ec.lock();
-					EODatabaseContext dc = EODatabaseContext.forceConnectionWithModel(model,cd,ec);
+					dc = EODatabaseContext.forceConnectionWithModel(model,cd,ec);
+					dc.lock();
+					EOAdaptorChannel ac = dc.availableChannel().adaptorChannel();
 					NSDictionary modelInfo = model.userInfo();
 					if(modelInfo != null)
 						modelInfo = (NSDictionary)modelInfo.valueForKey("schemaVersion");
 					if(modelInfo != null) {
 						int modelNum = Integer.parseInt(modelInfo.valueForKey("number").toString());
 						NSDictionary schemaVersion = null;
-						dc.lock();
-						EOAdaptorChannel ac = dc.availableChannel().adaptorChannel();
 						StringBuilder buf = new StringBuilder(
 	"SELECT VERSION_NUMBER, VERSION_TITLE FROM SCHEMA_VERSION WHERE MODEL_NAME = '");
-						buf.append(model.name()).append(
-								"' ORDER BY VERSION_NUMBER DESC;");
-						EOSQLExpression expr = ac.adaptorContext().adaptor().
-						expressionFactory().expressionForString(buf.toString());
+						buf.append(model.name()).append("' ORDER BY VERSION_NUMBER DESC;");
 						try {
+							EOSQLExpression expr = ac.adaptorContext().adaptor().
+							expressionFactory().expressionForString(buf.toString());
 							ac.evaluateExpression(expr);
 							NSArray descResults = ac.describeResults();
 							EOAttribute attr = (EOAttribute)descResults.objectAtIndex(0);
@@ -241,9 +241,8 @@ public class DataBaseConnector {
 							ac.setAttributesToFetch(descResults);
 							schemaVersion = ac.fetchRow();
 						} catch (Exception e) {
-						} finally {
-							ac.cancelFetch();
-							dc.unlock();
+							logger.log(WOLogLevel.INFO,"Failed to fetch schema info for model " +
+									model.name(),e);
 						}
 						buf.delete(0, buf.length());
 						buf.append("Model '").append(model.name()).append('\'');
@@ -259,7 +258,8 @@ public class DataBaseConnector {
 							logger.severe(buf.toString());
 							success = false;
 						}
-					}
+					} // check modelInfo
+					ac.closeChannel();
 					if(success) {
 						String message = "Model '" + model.name() + "' connected to database";
 						if(url != null)
@@ -300,6 +300,8 @@ public class DataBaseConnector {
 						success = success && ok;
 					}
 				} finally {
+					if(dc != null)
+						dc.unlock();
 					ec.unlock();
 				}
 			}

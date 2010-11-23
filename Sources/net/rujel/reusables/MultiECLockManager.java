@@ -112,6 +112,11 @@ public class MultiECLockManager {
 			unlock();
 		}
     }
+    
+    public synchronized void unregisterAll() {
+    	fullyUnlock();
+    	weakReferences.removeAllObjects();
+    }
 
     //Registers EC. If other registered ECs are currently locked by us,
     //lock the newly registered EC the same number of times to match outstanding
