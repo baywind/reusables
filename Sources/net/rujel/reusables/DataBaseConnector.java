@@ -219,85 +219,38 @@ public class DataBaseConnector {
 					ec.lock();
 					dc = EODatabaseContext.forceConnectionWithModel(model,cd,ec);
 					dc.lock();
-					EOAdaptorChannel ac = dc.availableChannel().adaptorChannel();
-					NSDictionary modelInfo = model.userInfo();
-					if(modelInfo != null)
-						modelInfo = (NSDictionary)modelInfo.valueForKey("schemaVersion");
-					if(modelInfo != null) {
-						int modelNum = Integer.parseInt(modelInfo.valueForKey("number").toString());
-						NSDictionary schemaVersion = null;
-						StringBuilder buf = new StringBuilder(
-	"SELECT VERSION_NUMBER, VERSION_TITLE FROM SCHEMA_VERSION WHERE MODEL_NAME = '");
-						buf.append(model.name()).append("' ORDER BY VERSION_NUMBER DESC;");
-						try {
-							EOSQLExpression expr = ac.adaptorContext().adaptor().
-							expressionFactory().expressionForString(buf.toString());
-							ac.evaluateExpression(expr);
-							NSArray descResults = ac.describeResults();
-							EOAttribute attr = (EOAttribute)descResults.objectAtIndex(0);
-							attr.setName("number");
-							attr = (EOAttribute)descResults.objectAtIndex(1);
-							attr.setName("title");
-							ac.setAttributesToFetch(descResults);
-							schemaVersion = ac.fetchRow();
-						} catch (Exception e) {
-							logger.log(WOLogLevel.INFO,"Failed to fetch schema info for model " +
-									model.name(),e);
-						}
-						buf.delete(0, buf.length());
-						buf.append("Model '").append(model.name()).append('\'');
-						int schemNum = (schemaVersion == null)?0:
-							((Number)schemaVersion.valueForKey("number")).intValue();
-						if(modelNum != schemNum) {
-							buf.append(" requires schema version ").append(modelNum);
-							buf.append('(').append(modelInfo.valueForKey("title")).append(')');
-							if(schemaVersion != null) {
-								buf.append(". found version ").append(schemNum).append('(');
-								buf.append(schemaVersion.valueForKey("title")).append(')');
-							}
-							logger.severe(buf.toString());
-							success = false;
-						}
-					} // check modelInfo
-					ac.closeChannel();
-					if(success) {
-						String message = "Model '" + model.name() + "' connected to database";
-						if(url != null)
-							message = message + '\n' + url;
-						logger.config(message);
-					}
+					success = verifyConnection(dc, model,logger, url);
 				} catch (Exception e) {
-					String message = "Model '" + model.name() + 
-										"' could not connect to database";
+					success = false;
+					StringBuilder message = new StringBuilder("Model '");
+					message.append(model.name());
+					int len = message.length();
+					message.append("' could not connect to database");
 					if(url != null)
-						message = message + '\n' + url;
+						message.append('\n').append(url);
 					if(noSettings) {
-						logger.log(WOLogLevel.INFO, message);
+						logger.log(WOLogLevel.INFO, message.toString());
 //						mg.removeModel(model);
 					} else {
-						logger.log(WOLogLevel.WARNING, message, e);
-						boolean ok = false;
+						logger.log(WOLogLevel.WARNING, message.toString(), e);
 						if(url != null) {
 							String untagged = (currSettings==null)?null:
 								currSettings.get("untagged", null);
-							if(untagged != null) {
+							if(untagged != null) { // try connecting to untagged
 								url = url.replaceFirst(dbName, untagged);
 								cd.takeValueForKey(url, "URL");
+								message.delete(len, message.length());
 								try {
-									EODatabaseContext.forceConnectionWithModel(model, cd, ec).
-										availableChannel();
-									message = "Model '" + model.name() +
-											"' connected to untagged database" + '\n' + url;
-									logger.config(message);
-									ok = true;
+									logger.info("Trying to connect to untagged database");
+									dc = EODatabaseContext.forceConnectionWithModel(model, cd, ec);
+									success = verifyConnection(dc, model,logger,url);
 								} catch (Exception ex) {
-									message = "Model '" + model.name() + 
-									"' also could not connect to database" + '\n' + url;
-									logger.log(WOLogLevel.WARNING, message, ex);
+									message.append("' also could not connect to database");
+									message.append('\n').append(url);
+									logger.log(WOLogLevel.WARNING, message.toString(), ex);
 								}
 							}
 						}
-						success = success && ok;
 					}
 				} finally {
 					if(dc != null)
@@ -314,6 +267,64 @@ public class DataBaseConnector {
 				coordinatorsByTag.takeValueForKey(store, tag);
 		}
 		ec.dispose();
+		return success;
+	}
+	
+	protected static boolean verifyConnection(EODatabaseContext dc, EOModel model,
+			Logger logger, String url) {
+		boolean success = true;
+		EOAdaptorChannel ac = dc.availableChannel().adaptorChannel();
+		NSDictionary modelInfo = model.userInfo();
+		if(modelInfo != null)
+			modelInfo = (NSDictionary)modelInfo.valueForKey("schemaVersion");
+		if(modelInfo != null) {
+			int modelNum = Integer.parseInt(modelInfo.valueForKey("number").toString());
+			NSDictionary schemaVersion = null;
+			StringBuilder buf = new StringBuilder(
+"SELECT VERSION_NUMBER, VERSION_TITLE FROM SCHEMA_VERSION WHERE MODEL_NAME = '");
+			buf.append(model.name()).append("' ORDER BY VERSION_NUMBER DESC;");
+			try {
+				EOSQLExpression expr = ac.adaptorContext().adaptor().
+				expressionFactory().expressionForString(buf.toString());
+				ac.evaluateExpression(expr);
+				NSArray descResults = ac.describeResults();
+				EOAttribute attr = (EOAttribute)descResults.objectAtIndex(0);
+				attr.setName("number");
+				attr = (EOAttribute)descResults.objectAtIndex(1);
+				attr.setName("title");
+				ac.setAttributesToFetch(descResults);
+				schemaVersion = ac.fetchRow();
+			} catch (Exception e) {
+				logger.log(WOLogLevel.INFO,
+						"Failed to fetch schema info for model " + model.name(),e);
+			}
+			buf.delete(0, buf.length());
+			buf.append("Model '").append(model.name()).append('\'');
+			int schemNum = (schemaVersion == null)?0:
+				((Number)schemaVersion.valueForKey("number")).intValue();
+			if(modelNum != schemNum) {
+				buf.append(" requires schema version ").append(modelNum);
+				buf.append('(').append(modelInfo.valueForKey("title")).append(')');
+				if(schemaVersion != null) {
+					buf.append(". found version ").append(schemNum).append('(');
+					buf.append(schemaVersion.valueForKey("title")).append(')');
+				}
+				logger.severe(buf.toString());
+				success = false;
+			}
+		} // check modelInfo
+		ac.closeChannel();
+		if(success) {
+			StringBuilder message = new StringBuilder("Model '");
+			message.append(model.name()).append("' connected to database");
+			if(modelInfo != null) {
+				message.append(", schema version: ");
+				message.append(modelInfo.valueForKey("title"));
+			}
+			if(url != null)
+				message.append('\n').append(url);
+			logger.config(message.toString());
+		}
 		return success;
 	}
 	
