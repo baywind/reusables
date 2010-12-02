@@ -48,7 +48,6 @@ public class ModelGroupReport extends com.webobjects.appserver.WOComponent {
 	
     public ModelGroupReport(WOContext context) {
         super(context);
-        
     }
     
     public NSArray models() {
@@ -117,5 +116,17 @@ public class ModelGroupReport extends com.webobjects.appserver.WOComponent {
     	StringBuilder buf = new StringBuilder(8);
     	buf.append(attr.precision()).append('.').append(attr.scale());
     	return buf.toString();
+    }
+    
+    public String modelVersion() {
+    	NSDictionary modelInfo = model.userInfo();
+		if(modelInfo != null)
+			modelInfo = (NSDictionary)modelInfo.valueForKey("schemaVersion");
+		if(modelInfo == null)
+			return null;
+		StringBuilder buf = new StringBuilder("<strong>v");
+		buf.append(modelInfo.valueForKey("number"));
+		buf.append("</strong> (").append(modelInfo.valueForKey("title")).append(')');
+		return buf.toString();
     }
 }

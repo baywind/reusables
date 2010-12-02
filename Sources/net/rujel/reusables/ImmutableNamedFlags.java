@@ -79,7 +79,7 @@ public class ImmutableNamedFlags extends NamedFlags {
 	}
 	
 	public NamedFlags mutableClone() {
-		return super.mutableClone();
+		return new NamedFlags(flags,numerator);
 	}
 	
 	public ImmutableNamedFlags immutableClone() {

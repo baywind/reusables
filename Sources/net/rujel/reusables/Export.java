@@ -111,9 +111,6 @@ public class Export implements WOActionResults {
 			return;
 		vs = vs.replaceAll("\"", "\"\"");
 		response.appendContentString(vs);
-		if(vs.indexOf('E') > 0) {
-			vs.length();
-		}
 	}
 	
 	public void addValue(Object value) {
