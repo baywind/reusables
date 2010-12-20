@@ -14,11 +14,11 @@ public abstract class Export implements WOActionResults {
 	protected boolean rowOpen = false;
 	protected boolean valueOpen = false;
 	protected boolean firstValue = true;
+	protected boolean isTitle = false;
     
 	public Export(WOResponse aResponse,String fileName) {
 		response = aResponse;
 		filename = fileName;
-		beginFile();
     }
 	
 	public String contentType() {
@@ -78,10 +78,16 @@ public abstract class Export implements WOActionResults {
 		firstValue = true;
 	}
 	
+	public void beginTitleRow() {
+		beginRow();
+		isTitle = true;
+	}
+	
 	public void endRow() {
 		if(valueOpen)
 			endValue();
 		rowOpen = false;
+		isTitle = false;
 	}
 	
 	public void beginValue() {
@@ -112,5 +118,12 @@ public abstract class Export implements WOActionResults {
 		beginValue();
 		appendValue(value);
 		endValue();
+	}
+	
+	public void addTitle(Object value) {
+		boolean wasTitle = isTitle;
+		isTitle = true;
+		addValue(value);
+		isTitle = wasTitle;
 	}
 }

@@ -6,15 +6,19 @@ import com.webobjects.appserver.WOResponse;
 
 public class ExportHTML extends Export {
 
-	public ExportHTML(WOResponse aResponse,String fileName) {
+	public ExportHTML(WOResponse aResponse,String fileName, String title) {
 		super(aResponse, fileName);
+		this.title = title;
+		beginFile();
 	}
 	
-	public ExportHTML(WOContext context,String fileName) {
+	public ExportHTML(WOContext context,String fileName, String title) {
 		super(WOApplication.application().createResponseInContext(context), fileName);
+		this.title = title;
+		beginFile();
 	}
 	
-	public String title;
+	protected String title;
 	
 	public String fileExt() {
 		return ".html";
@@ -62,11 +66,11 @@ public class ExportHTML extends Export {
 	
 	public void beginValue() {
 		super.beginValue();
-		response.appendContentString("<td>");
+		response.appendContentString((isTitle)?"<th>":"<td>");
 	}
 	
 	public void endValue() {
 		super.endValue();
-		response.appendContentString("</td>");
+		response.appendContentString((isTitle)?"</th>":"</td>");
 	}
 }
