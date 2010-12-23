@@ -101,7 +101,10 @@ public class Various {
 	public static String cleanURL(String url) {
 		if(url.startsWith("http")) {
 			int pos = url.indexOf('/',8);
-			url = url.substring(pos);
+			if(pos > 0)
+				url = url.substring(pos);
+			else
+				return "";
 		}
 		return url;
 	}
