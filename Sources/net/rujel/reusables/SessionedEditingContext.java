@@ -45,9 +45,6 @@ public class SessionedEditingContext extends EOEditingContext {
 		super((ses.objectForKey("objectStore")!=null)?
 					(EOObjectStore)ses.objectForKey("objectStore"):
 						EOObjectStoreCoordinator.defaultCoordinator());
-		if (ses == null) throw new 
-			NullPointerException (
-					"You should define a session to instantiate SessionedEditingContext");
 		session = ses;
 		if(ses instanceof MultiECLockManager.Session)
 			((MultiECLockManager.Session)ses).ecLockManager().registerEditingContext(this);

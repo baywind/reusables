@@ -30,6 +30,7 @@
 package net.rujel.reusables;
 
 import com.webobjects.foundation.*;
+import com.webobjects.appserver.WORequest;
 import com.webobjects.eoaccess.EOUtilities;
 import com.webobjects.eocontrol.*;
 
@@ -258,5 +259,19 @@ public class Various {
 		} else {
 			throw new IllegalArgumentException("Unsupported qualifier type");
 		}
+	}
+
+	protected static final String[] CLIENT_IDENTITY_KEYS = 
+		new String[] {"x-webobjects-remote-addr", "remote_addr","remote_host","user-agent"};
+
+	public static NSMutableDictionary clientIdentity(WORequest request) {
+		NSMutableDictionary result = new NSMutableDictionary();
+		Object value = null;
+		for (int i = 0; i < CLIENT_IDENTITY_KEYS.length; i++) {
+			value = request.headerForKey((String)CLIENT_IDENTITY_KEYS[i]);
+			if(value != null && (result.count() == 0 || !result.containsValue(value)))
+				result.setObjectForKey(value,CLIENT_IDENTITY_KEYS[i]);
+		}
+		return result;
 	}
 }

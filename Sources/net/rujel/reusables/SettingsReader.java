@@ -120,9 +120,9 @@ public abstract class SettingsReader implements NSKeyValueCodingAdditions {
 			return !(((Number)test).doubleValue() == 0.0);
 		else if(!(test instanceof String))
 			return def;
-		else if(((String)test).equalsIgnoreCase("true"))
+		else if(((String)test).equalsIgnoreCase("true") || ((String)test).equalsIgnoreCase("YES"))
 			return true;
-		else if(((String)test).equalsIgnoreCase("false"))
+		else if(((String)test).equalsIgnoreCase("false") || ((String)test).equalsIgnoreCase("NO"))
 			return false;
 		else
 			return def;		
