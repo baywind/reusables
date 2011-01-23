@@ -152,7 +152,9 @@ public class NamedFlags extends MutableFlags implements NSKeyValueCoding,Cloneab
 	public Object valueForKey(String key) {
 		boolean result;
 		if (key.charAt(0)=='@') {
-			result = getFlag(Integer.parseInt(key.substring(1)));
+			result = getFlag(Integer.parseInt(key.substring(2)));
+			if(key.charAt(1)=='_')
+				result = !result;
 		} else {
 			String subKey = key;
 			if (key.charAt(0)=='_')
