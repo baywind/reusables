@@ -36,13 +36,22 @@ public class FileRequestHandler extends WORequestHandler {
 		messages = localisation;
 	}
 
-	protected WOResponse error(String errorKey, WOContext context) {
+	protected WOResponse error(String errorKey, Exception ex, WOContext context) {
 		String error = (messages==null)?null:(String)messages.valueForKey(errorKey);
 		if(error == null)
 			error = (String)errors.valueForKey(errorKey);
 		WOResponse response = WOApplication.application().createResponseInContext(context);
-		response.setContent(error);
 		response.setHeader("text/plain","Content-Type");
+		if(ex == null) {
+			response.setStatus(WOResponse.HTTP_STATUS_NOT_FOUND);
+			response.setContent(error);
+		} else {
+			response.setStatus(WOResponse.HTTP_STATUS_INTERNAL_ERROR);
+			response.appendContentString(error);
+			response.appendContentCharacter('\n');
+			response.appendContentCharacter('\n');
+			response.appendContentString(WOLogFormatter.formatTrowable(ex));
+		}
 		return response;
 	}
 	
@@ -101,16 +110,16 @@ public class FileRequestHandler extends WORequestHandler {
 			NSMutableArray files = (NSMutableArray)session.objectForKey("FileRequestHandler");
 			if(files == null || files.count() <= index) {
 				application.saveSessionForContext(context);
-				return error("unknownIndex", context);
+				return error("unknownIndex", null, context);
 			}
 			dir = (File)files.objectAtIndex(index);
 		} catch (NumberFormatException e) {
 			application.saveSessionForContext(context);
-			return error("urlFormat", context);
+			return error("urlFormat", null, context);
 		}
 		WOResponse response = null;
 		if(!dir.exists()) {
-			response = error("notExist", context);
+			response = error("notExist", null, context);
 		} else if(dir.isDirectory()) {
 			response = fromFolder(dir, toDo, context);
 		} else if(dir.getName().endsWith(".zip")) {
@@ -127,7 +136,7 @@ public class FileRequestHandler extends WORequestHandler {
 				response.setHeader(buf.toString(),"Content-Disposition");
 				response.disableClientCaching();
 			} catch (Exception e) {
-				response = error("errorReading", context);
+				response = error("errorReading", e,context);
 			}
 		}
 		application.saveSessionForContext(context);
@@ -170,10 +179,10 @@ public class FileRequestHandler extends WORequestHandler {
 					return response;
 				}
 			} else {
-				return error("notExist", context);
+				return error("notExist", null, context);
 			}
 		} catch (Exception exc) {
-			return error("errorReading", context);
+			return error("errorReading", exc,context);
 		}
 //		return null;
 	}
@@ -221,12 +230,12 @@ public class FileRequestHandler extends WORequestHandler {
 					return rdr.generateResponse();
 				}
 				zip.close();
-				return error("errorReading", context);
+				return error("errorReading", null, context);
 			}
 			ZipEntry entry = zip.getEntry(toDo);
 			if(entry == null) {
 				zip.close();
-				return error("notExist", context);
+				return error("notExist", null, context);
 			}
 			if(entry.isDirectory()) {
 				if(!folder)
@@ -239,7 +248,7 @@ public class FileRequestHandler extends WORequestHandler {
 				}
 				if(entry == null) {
 					zip.close();
-					return error("notExist", context);
+					return error("notExist", null, context);
 				}
 			}
 			FilterInputStream stream = new FilterInputStream(zip.getInputStream(entry)) {
@@ -251,7 +260,6 @@ public class FileRequestHandler extends WORequestHandler {
 			};
 			WOApplication application = WOApplication.application();
 			WOResponse response = application.createResponseInContext(context); 
-			
 			String conType = application.resourceManager().
 					contentTypeForResourceNamed(toDo);
 			response.setHeader(conType,"Content-Type");
@@ -259,7 +267,7 @@ public class FileRequestHandler extends WORequestHandler {
 			response.disableClientCaching();
 			return response;
 		} catch (Exception e) {
-			return error("errorReading", context);
+			return error("errorReading",e, context);
 		}
 	}
 
