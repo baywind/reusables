@@ -71,6 +71,8 @@ public class SessionedEditingContext extends EOEditingContext {
 	public void saveChanges() {
 		try {
 			super.saveChanges();
+			if(!SettingsReader.boolForKeyPath("ui.undoAfterSave", false))
+				undoManager().removeAllActionsWithTarget(this);
 			failures.nullify();
 		} catch (RuntimeException ex) {
 			failures.raise();
