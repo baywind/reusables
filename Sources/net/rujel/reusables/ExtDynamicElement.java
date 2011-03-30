@@ -90,6 +90,13 @@ public class ExtDynamicElement extends WODynamicElement {
 		return association.valueInComponent(context.component());
 	}
 	
+	public String stringValueForBinding(String aBindingName, WOContext context) {
+		Object val = valueForBinding(aBindingName, context);
+		if(val == null)
+			return null;
+		return val.toString();
+	}
+	
 	public void setValueForBinding(Object aValue, String aBindingName, WOContext context) {
 		if(bindingsDict == null)
 			throw new IllegalStateException("No bindings a re set");
