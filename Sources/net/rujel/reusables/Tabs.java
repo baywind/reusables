@@ -135,8 +135,7 @@ public class Tabs extends WOComponent {
 			if(tabItem instanceof WOActionResults)
 				return (WOActionResults)tabItem;
 			try {
-				String pageName = (String)NSKeyValueCoding.Utility.valueForKey(
-						tabItem, "page");
+				String pageName = (String)NSKeyValueCoding.Utility.valueForKey(tabItem, "page");
 				WOComponent page = (WOComponent)currTab;
 				if(page.name().endsWith(pageName))
 					return page;
@@ -162,10 +161,14 @@ public class Tabs extends WOComponent {
 //				setValueForBinding(null,"currTab");
 			setValueForBinding(index,"currTab");
 		} else {
-			if(tabItem == currTab)
+			Object selected = tabItem;
+			if(Various.boolForObject(valueForBinding("byAttribute"))) {
+				String key = (String)valueForBinding("idAttribute");
+				selected = NSKeyValueCoding.Utility.valueForKey(selected, key);
+			}
+			if(selected == currTab)
 				setValueForBinding(null,"currTab");
-			//currTab = tabItem;
-			setValueForBinding(tabItem,"currTab");
+			setValueForBinding(selected,"currTab");
 		}
 //		tablist=(NSArray)valueForBinding("tablist");
 		return (WOActionResults)valueForBinding("selectAction");
@@ -177,6 +180,8 @@ public class Tabs extends WOComponent {
 		if(Various.boolForObject(valueForBinding("numeric"))) {
 			if(index.equals(currTab)) return "selection";
 		} else {
+			if(tabItem == currTab)
+				return "selection";
 			String idAttribute = (String)valueForBinding("idAttribute");
 			if(idAttribute == null && currTab instanceof WOComponent) {
 				idAttribute = ((WOComponent)currTab).name();
@@ -188,15 +193,15 @@ public class Tabs extends WOComponent {
 			}
 			if(idAttribute != null) {
 				try {
-					Object recent = NSKeyValueCoding.Utility.valueForKey(
-							tabItem, idAttribute);
+					Object recent = NSKeyValueCoding.Utility.valueForKey(tabItem, idAttribute);
 					if (recent != null) {
 						if (recent.equals(currTab))
 							return "selection";
-						Object sel = NSKeyValueCoding.Utility.valueForKey(
-								currTab, idAttribute);
-						if (recent.equals(sel))
-							return "selection";
+						if(!Various.boolForObject(valueForBinding("byAttribute"))) {
+							Object sel = NSKeyValueCoding.Utility.valueForKey(currTab,idAttribute);
+							if (recent.equals(sel))
+								return "selection";
+						}
 					}
 				} catch (Exception e) {
 					;
