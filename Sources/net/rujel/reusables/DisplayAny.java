@@ -34,6 +34,7 @@ import java.lang.reflect.Method;
 import java.util.Enumeration;
 
 import com.webobjects.appserver.*;
+import com.webobjects.eocontrol.EOEnterpriseObject;
 import com.webobjects.foundation.*;
 
 public class DisplayAny extends ExtDynamicElement {
@@ -265,9 +266,14 @@ public class DisplayAny extends ExtDynamicElement {
 					tmp = refObject;
 				}
 				if(tmp != null) {
-					tmp = resultCache.objectForKey(tmp);
-					if(tmp != null)
-						return tmp;
+					Object res = resultCache.objectForKey(tmp);
+					if(res != null) {
+						if(res instanceof EOEnterpriseObject &&
+								((EOEnterpriseObject)tmp).editingContext() == null)
+							resultCache.removeObjectForKey(tmp);
+						else
+							return res;
+					}
 				}
 			}
 			try {
