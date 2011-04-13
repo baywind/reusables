@@ -219,7 +219,7 @@ public class DataBaseConnector {
 					ec.lock();
 					dc = EODatabaseContext.forceConnectionWithModel(model,cd,ec);
 					dc.lock();
-					success = verifyConnection(dc, model,logger, url);
+					success &= verifyConnection(dc, model,logger, url);
 				} catch (Exception e) {
 					success = false;
 					StringBuilder message = new StringBuilder("Model '");
@@ -243,7 +243,7 @@ public class DataBaseConnector {
 								try {
 									logger.info("Trying to connect to untagged database");
 									dc = EODatabaseContext.forceConnectionWithModel(model, cd, ec);
-									success = verifyConnection(dc, model,logger,url);
+									success &= verifyConnection(dc, model,logger,url);
 								} catch (Exception ex) {
 									message.append("' also could not connect to database");
 									message.append('\n').append(url);
