@@ -163,16 +163,42 @@ public class DisplayAny extends ExtDynamicElement {
 				value = dict.valueForKey("wrapperBindings");
 			
 			if(value == null) {
-				value = valueForBinding("value", aContext);
+				value = dict.valueForKey("value");
+				if(value != null)
+					value = ValueReader.evaluateValue(value, 
+							valueForBinding("value", aContext), aContext.component());
+				else
+					value = valueForBinding("value", aContext);
 				if(value == null) {
 					value = valueForBinding("valueWhenEmpty", aContext);
-					if(value != null)
+					if(value != null) {
 						aResponse.appendContentString(value.toString());
+					} else {
+						value = dict.valueForKey("valueWhenEmpty");
+						if(value != null)
+							aResponse.appendContentString(value.toString());
+					}
 					return;
 				}
 				String path = (String)dict.valueForKey("titlePath");
 				if(path != null)
 					value = NSKeyValueCodingAdditions.Utility.valueForKeyPath(value, path);
+				path = (String)dict.valueForKey("format");
+				if(path != null) {
+					value = formatObject(path, value);
+				} else if(Various.boolForObject(dict.valueForKey("condFormat"))) {
+					if(value instanceof EOEnterpriseObject) {
+						path = ((EOEnterpriseObject)value).entityName();
+					} else {
+						path = value.getClass().getName();
+						int dot = path.lastIndexOf('.');
+						if(dot > 0)
+							path = path.substring(dot +1);
+					}
+					path = (String)dict.valueForKey("format" + path);
+					if(path != null)
+						value = formatObject(path, value);
+				}
 				path = (value == null)?"":value.toString();
 				value = dict.valueForKey("escapeHTML");
 				if(value == null || Various.boolForObject(value))
@@ -199,8 +225,65 @@ public class DisplayAny extends ExtDynamicElement {
 					aResponse.appendContentString(value.toString());
 				return;
 			}
+			String prID = presenterID(dict);
+			if(prID != null)
+				aContext.appendElementIDComponent(prID);
 			presenter.appendToResponse(aResponse, aContext);
+			if(prID != null)
+				aContext.deleteLastElementIDComponent();
 		}
+	}
+	
+	protected static String presenterID(NSDictionary dict) {
+		String wrID = (String)dict.valueForKey("wrapper");
+		String prID = (String)dict.valueForKey("presenter");
+		if(wrID != null)
+			wrID = wrID.replace('.', '_');
+		if(prID != null) {
+			prID = prID.replace('.', '_');
+			if(wrID != null)
+				return wrID + "__" + prID;
+			else
+				return prID;
+		} else {
+			return wrID;
+		}
+	}
+	
+	public static String formatObject(String format, Object obj) {
+		int idx = format.indexOf("%[");
+		int end = -1;
+		NSMutableArray<String> keyset = new NSMutableArray<String>();
+		StringBuilder buf = new StringBuilder();
+		while (idx >= 0) {
+			buf.append(format.substring(end +1, idx +1));
+			end = format.indexOf(']',idx);
+			if(end < 0) {
+				idx = format.indexOf("%[",idx+2);
+				continue;
+			}
+			String sub = format.substring(idx + 2, end);
+			if(format.charAt(end +1) == '$') {
+				int keyidx = keyset.indexOf(sub);
+				if(keyidx < 0) {
+					keyset.addObject(sub);
+					buf.append(keyset.count());
+				} else {
+					buf.append(keyidx +1);
+				}
+			} else {
+				keyset.addObject(sub);
+			}
+			idx = format.indexOf("%[",end);
+		}
+		if(end < format.length() -1)
+			buf.append(format.substring(end +1));
+		Object[] keys = keyset.toArray();
+		for (int i = 0; i < keys.length; i++) {
+			String key = (String)keys[i];
+			keys[i] = NSKeyValueCodingAdditions.Utility.valueForKeyPath(obj, key);
+		}
+		return String.format(buf.toString(), keys);
 	}
 	
 	public WOActionResults invokeAction(WORequest aRequest, WOContext aContext) {
@@ -229,8 +312,16 @@ public class DisplayAny extends ExtDynamicElement {
 				return nextPage;
 			}
 			WOElement presenter = getPresenter(dict);
-			WOActionResults result = presenter.invokeAction(aRequest, aContext);
-			return result;
+			if(presenter != null) {
+				String prID = presenterID(dict);
+				if(prID != null)
+					aContext.appendElementIDComponent(prID);
+				WOActionResults result = presenter.invokeAction(aRequest, aContext);
+				if(prID != null)
+					aContext.deleteLastElementIDComponent();
+				return result;
+			}
+			return null;
 		}
 		return super.invokeAction(aRequest, aContext);
 	}
@@ -239,7 +330,14 @@ public class DisplayAny extends ExtDynamicElement {
 		NSDictionary dict = (NSDictionary)valueForBinding("dict", aContext);
 		if(dict != null && Various.boolForObject(dict.valueForKey("takeValuesFromRequest"))) {
 			WOElement presenter = getPresenter(dict);
-			presenter.takeValuesFromRequest(aRequest, aContext);
+			if(presenter != null) {
+				String prID = presenterID(dict);
+				if(prID != null)
+					aContext.appendElementIDComponent(prID);
+				presenter.takeValuesFromRequest(aRequest, aContext);
+				if(prID != null)
+					aContext.deleteLastElementIDComponent();
+			}
 		}
 		super.takeValuesFromRequest(aRequest, aContext);
 	}
@@ -252,6 +350,8 @@ public class DisplayAny extends ExtDynamicElement {
 			Object tmp = dict.valueForKey("methodName");
 			if(tmp == null)
 				return dict;
+			if(refObject == null && Various.boolForObject(dict.valueForKey("nullNull")))
+				return null;
 			String methodName = (String)evaluateValue(tmp,refObject, page);
 			NSMutableDictionary resultCache = (NSMutableDictionary)dict
 					.objectForKey("resultCache");
@@ -459,7 +559,7 @@ public class DisplayAny extends ExtDynamicElement {
     	public static Object evaluateValue(Object inPlist, Object refObject, WOComponent page) {
     		if (inPlist instanceof String) {
 				String keyPath = (String) inPlist;
-				if(keyPath.length() == 0)
+				if(keyPath.length() == 0 || keyPath.equalsIgnoreCase("null"))
 					return null;
 				if(keyPath.charAt(0) == '\'') {
 					return keyPath.substring(1);
@@ -482,8 +582,7 @@ public class DisplayAny extends ExtDynamicElement {
 				if(keyPath.charAt(0) == '.') {
 					if(refObject instanceof String) {
 						try {
-							Object tmp = page
-									.valueForKeyPath((String) refObject);
+							Object tmp = page.valueForKeyPath((String) refObject);
 							refObject = tmp;
 						} catch (UnknownKeyException e) {
 							;
