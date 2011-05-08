@@ -221,7 +221,6 @@ public class DataBaseConnector {
 					dc.lock();
 					success &= verifyConnection(dc, model,logger, url);
 				} catch (Exception e) {
-					success = false;
 					StringBuilder message = new StringBuilder("Model '");
 					message.append(model.name());
 					int len = message.length();
@@ -232,6 +231,7 @@ public class DataBaseConnector {
 						logger.log(WOLogLevel.INFO, message.toString());
 //						mg.removeModel(model);
 					} else {
+						success = false;
 						logger.log(WOLogLevel.WARNING, message.toString(), e);
 						if(url != null) {
 							String untagged = (currSettings==null)?null:

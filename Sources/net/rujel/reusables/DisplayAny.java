@@ -32,6 +32,7 @@ package net.rujel.reusables;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Enumeration;
+import java.util.logging.Logger;
 
 import com.webobjects.appserver.*;
 import com.webobjects.eocontrol.EOEnterpriseObject;
@@ -588,10 +589,15 @@ public class DisplayAny extends ExtDynamicElement {
 							;
 						}
 					}
-					if(keyPath.length() > 1 && refObject != null)
-						return NSKeyValueCodingAdditions.Utility.
-								valueForKeyPath(refObject, keyPath.substring(1));
-					else
+					if(keyPath.length() > 1 && refObject != null) {
+						try {
+							return NSKeyValueCodingAdditions.Utility.
+									valueForKeyPath(refObject, keyPath.substring(1));
+						} catch (NSKeyValueCoding.UnknownKeyException e) {
+							Logger.getLogger("rujel.reusables").log(WOLogLevel.WARNING,
+									"Erroneous dispayDict",new Object[] {page,e});
+						}
+					}
 						return refObject;
 				}
 			}
