@@ -89,6 +89,8 @@ public class FileWriterUtil implements java.io.Closeable {
 			StringBuilder name = new StringBuilder(28);
 			name.append('_').append(base.getName());
 			base = new File(dir,name.toString());
+			if(!dir.exists())
+				dir.mkdirs();
 			zipout = new ZipOutputStream(new FileOutputStream(base));
 		} else if(!file.exists()) {
 			file.mkdirs();
@@ -176,6 +178,9 @@ public class FileWriterUtil implements java.io.Closeable {
     		curDir = (root)?dirName: (String)curDir + dirName;
     		try {
 				zipout.putNextEntry(new ZipEntry((String)curDir));
+			} catch (java.util.zip.ZipException ze) {
+				if(!ze.getMessage().startsWith("duplicate entry"))
+					throw new NSForwardException(ze);
 			} catch (IOException e) {
 				throw new NSForwardException(e);
 			}

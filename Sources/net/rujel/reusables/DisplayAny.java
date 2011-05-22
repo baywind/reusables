@@ -45,10 +45,13 @@ public class DisplayAny extends ExtDynamicElement {
 //		checkRequired(associations, "value");
 	}
 	
-	protected NSMutableDictionary associationsFromBindingsDict(NSDictionary bindings) {
+	protected NSMutableDictionary associationsFromBindingsDict(
+			NSDictionary bindings, Object dictValue) {
 		NSMutableDictionary associations = new NSMutableDictionary();
 		if(bindings != null && bindings.count() > 0) {
 			WOAssociation valueBinding = (WOAssociation)bindingsDict.valueForKey("value");
+			if(dictValue != null)
+				valueBinding = new DictAssociation(valueBinding, dictValue);
 			Enumeration enu = bindings.keyEnumerator();
 			while (enu.hasMoreElements()) {
 				String key = (String) enu.nextElement();
@@ -104,9 +107,10 @@ public class DisplayAny extends ExtDynamicElement {
 	
 	protected WOElement getPresenter(NSDictionary dict) {
 		String presenterName = (String)dict.valueForKey("presenter");
+		Object dictValue = dict.valueForKey("value");
 		NSDictionary bindings = (NSDictionary)dict.valueForKey("presenterBindings");
 		// prepare main Element
-		NSMutableDictionary associations = associationsFromBindingsDict(bindings);
+		NSMutableDictionary associations = associationsFromBindingsDict(bindings, dictValue);
 		if(presenterName == null) {
 			presenterName = "WOString";
 			if(associations.valueForKey("value") == null) {
@@ -121,6 +125,9 @@ public class DisplayAny extends ExtDynamicElement {
 						path = valueBinding.keyPath() + '.' + path;
 						valueBinding = WOAssociation.associationWithKeyPath(path);
 					}
+				} else {
+					if(dictValue != null) 
+						valueBinding = new DictAssociation(valueBinding,dictValue);
 				}
 				associations.takeValueForKey(valueBinding, "value");
 			}
@@ -132,7 +139,7 @@ public class DisplayAny extends ExtDynamicElement {
 		presenterName = (String)dict.valueForKey("wrapper");
 		bindings = (NSDictionary)dict.valueForKey("wrapperBindings");
 		if(presenterName != null || (bindings != null && bindings.count() > 0)) {
-			associations = associationsFromBindingsDict(bindings);
+			associations = associationsFromBindingsDict(bindings, dictValue);
 			if(presenterName == null || Character.isLowerCase(presenterName.charAt(0))) {
 				if(associations.valueForKey("elementName") == null) {
 					if(presenterName == null)
@@ -140,12 +147,11 @@ public class DisplayAny extends ExtDynamicElement {
 					associations.takeValueForKey(
 							WOAssociation.associationWithValue(presenterName), "elementName");
 				}
-				presenterName = "WOGenericElement";
+				presenterName = "WOGenericContainer";
 			}
 			presenter = WOApplication.application().dynamicElementWithName(
 					presenterName, associations, presenter, null);
 		}
-		
 		return presenter;
 	}
 
@@ -290,39 +296,38 @@ public class DisplayAny extends ExtDynamicElement {
 	public WOActionResults invokeAction(WORequest aRequest, WOContext aContext) {
 		NSDictionary dict = (NSDictionary)valueForBinding("dict", aContext);
 		if(dict != null && Various.boolForObject(dict.valueForKey("invokeAction"))) {
+			String prID = presenterID(dict);
+			if(prID != null)
+				aContext.appendElementIDComponent(prID);
 			String pageName = (String)dict.valueForKey("nextPage");
+			WOActionResults result = null;
 			if(pageName != null && aContext.senderID().equals(aContext.elementID())) {
-				WOComponent nextPage = WOApplication.application().pageWithName(pageName, aContext);
+				result = WOApplication.application().pageWithName(pageName, aContext);
 				NSDictionary pageParams = (NSDictionary)dict.valueForKey("pageParams");
-				if(pageParams == null || pageParams.count() == 0)
-					return nextPage;
-				Enumeration enu = pageParams.keyEnumerator();
-				while (enu.hasMoreElements()) {
-					String key = (String)enu.nextElement();
-					Object param = pageParams.valueForKey(key);
-					if(param instanceof String) {
-						String str = (String)param;
-						if(str.charAt(0) == '^')
-							param = valueForBinding(str.substring(1), aContext);
-						else
-							param = ValueReader.evaluateValue(param,
-									valueForBinding("value", aContext), aContext.page());
+				if(pageParams != null && pageParams.count() > 0) {
+					Enumeration enu = pageParams.keyEnumerator();
+					while (enu.hasMoreElements()) {
+						String key = (String)enu.nextElement();
+						Object param = pageParams.valueForKey(key);
+						if(param instanceof String) {
+							String str = (String)param;
+							if(str.charAt(0) == '^')
+								param = valueForBinding(str.substring(1), aContext);
+							else
+								param = ValueReader.evaluateValue(param,
+										valueForBinding("value", aContext), aContext.page());
+						}
+						((WOComponent)result).takeValueForKey(param, key);
 					}
-					nextPage.takeValueForKey(param, key);
 				}
-				return nextPage;
+			} else {
+				WOElement presenter = getPresenter(dict);
+				if(presenter != null)
+					result = presenter.invokeAction(aRequest, aContext);
 			}
-			WOElement presenter = getPresenter(dict);
-			if(presenter != null) {
-				String prID = presenterID(dict);
-				if(prID != null)
-					aContext.appendElementIDComponent(prID);
-				WOActionResults result = presenter.invokeAction(aRequest, aContext);
-				if(prID != null)
-					aContext.deleteLastElementIDComponent();
-				return result;
-			}
-			return null;
+			if(prID != null)
+				aContext.deleteLastElementIDComponent();
+			return result;
 		}
 		return super.invokeAction(aRequest, aContext);
 	}
@@ -341,6 +346,48 @@ public class DisplayAny extends ExtDynamicElement {
 			}
 		}
 		super.takeValuesFromRequest(aRequest, aContext);
+	}
+	
+	public static class DictAssociation extends WOAssociation {
+		
+		protected Object dict;
+		WOAssociation sup;
+		
+		public DictAssociation(WOAssociation parent,Object dictValue) {
+			super();
+			dict = dictValue;
+			sup = parent;
+		}
+
+		public Object valueInComponent(WOComponent aComponent) {
+			Object value = sup.valueInComponent(aComponent);
+			return ValueReader.evaluateValue(dict, value, aComponent);
+		}
+		public boolean isValueSettable() {
+			return false;
+		}
+		public boolean isValueConstant() {
+			return true;
+		}
+		public boolean isValueSettableInComponent(WOComponent aComponent) {
+			return sup.isValueSettableInComponent(aComponent);
+		}
+		public boolean isValueConstantInComponent(WOComponent aComponent) {
+			return sup.isValueConstantInComponent(aComponent);
+		}
+		public String bindingInComponent(WOComponent arg0) {
+			return sup.bindingInComponent(arg0);
+		}
+		public String keyPath() {
+			return sup.keyPath();
+		}
+		public void setDebugEnabledForBinding(String aBindingName,
+                String aDeclarationName,String aDeclarationType) {
+			sup.setDebugEnabledForBinding(aBindingName, aDeclarationName, aDeclarationType);
+		}
+		public void setValue(Object aValue, WOComponent aComponent) {
+			throw new UnsupportedOperationException("Calculated value can not be set");
+		}
 	}
 	
     public static class ValueReader implements NSKeyValueCodingAdditions {
