@@ -417,7 +417,7 @@ public class DisplayAny extends ExtDynamicElement {
 					Object res = resultCache.objectForKey(tmp);
 					if(res != null) {
 						if(res instanceof EOEnterpriseObject &&
-								((EOEnterpriseObject)tmp).editingContext() == null)
+								((EOEnterpriseObject)res).editingContext() == null)
 							resultCache.removeObjectForKey(tmp);
 						else
 							return res;
