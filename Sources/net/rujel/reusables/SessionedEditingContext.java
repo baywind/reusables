@@ -29,6 +29,8 @@
 
 package net.rujel.reusables;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.logging.Logger;
 
 import com.webobjects.eocontrol.*;
@@ -38,6 +40,7 @@ import com.webobjects.foundation.NSMutableArray;
 public class SessionedEditingContext extends EOEditingContext {
 	protected WOSession session;
 	protected static Logger logger = Logger.getLogger("rujel.reusables");
+	protected static final SimpleDateFormat df = new SimpleDateFormat("HH:mm:ss SSS");
 	
 	protected Counter failures = new Counter();
 	
@@ -115,7 +118,7 @@ public class SessionedEditingContext extends EOEditingContext {
 
 	   public void lock() {
 	       String nameOfCurrentThread = Thread.currentThread().getName();
-	       String trace = WOLogFormatter.formatTrowable(new Exception());
+	       String trace = WOLogFormatter.formatTrowable(new Exception(df.format(new Date())));
 	       if (_stackTraces.count() == 0) {
 	           _stackTraces.addObject(trace);
 	           _nameOfLockingThread = nameOfCurrentThread;
