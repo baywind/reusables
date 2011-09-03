@@ -49,10 +49,13 @@ public class ExtDynamicElement extends WODynamicElement {
 	}
 	
 	public WOActionResults invokeAction(WORequest aRequest, WOContext aContext) {
-    	if(aContext.elementID().equals(aContext.senderID()))
+		String elt = aContext.elementID();
+		if(elt == null || elt.length() == 0)
+			elt = "0";
+    	if(elt.equals(aContext.senderID()))
     		return action(aContext);
-    	if(!aContext.senderID().startsWith(aContext.elementID() + '.') &&
-    			!aContext.elementID().startsWith(aContext.senderID() + '.'))
+    	if(!aContext.senderID().startsWith(elt + '.') &&
+    			!elt.startsWith(aContext.senderID() + '.'))
     		return null;
 		if(children != null)
 			return children.invokeAction(aRequest, aContext);
