@@ -44,16 +44,8 @@ public class DegenerateFlags extends ImmutableNamedFlags {
 		if(value) flags = -1;
 	}
 	
-	public void setKeys (NSArray newKeys) {
-		;
-	}
-	
 	public NSArray getKeys () {
 		return null;
-	}
-	
-	public void setNumerator (Numerator newNum) {
-		;
 	}
 	
 	public int getIndexForKey(Object key) {
