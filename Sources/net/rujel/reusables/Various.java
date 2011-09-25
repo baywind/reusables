@@ -262,7 +262,8 @@ public class Various {
 	}
 
 	protected static final String[] CLIENT_IDENTITY_KEYS = 
-		new String[] {"x-webobjects-remote-addr", "remote_addr","remote_host","user-agent"};
+		new String[] {"x-webobjects-remote-addr", "remote_addr",
+			"remote_host","user-agent","x-forwarded-for"};
 
 	public static NSMutableDictionary clientIdentity(WORequest request) {
 		NSMutableDictionary result = new NSMutableDictionary();
