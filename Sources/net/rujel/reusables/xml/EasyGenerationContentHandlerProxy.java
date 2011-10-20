@@ -93,6 +93,15 @@ public class EasyGenerationContentHandlerProxy implements ContentHandler {
     }
     
     /**
+     * Prepares enumeration attribute (type "NMTOKEN") for the next coming element.
+     * @param name Name for the attribute.
+     * @param value Value for the attribute.
+     */
+    public void prepareEnumAttribute(String name, String value) {
+    	prepareAttribute(name, "NMTOKEN", value);
+    }
+
+    /**
      * Prepares attribute for hthe next coming element.
      * The attribute type is one of the strings "CDATA", "ID", "IDREF", "IDREFS",
      * "NMTOKEN", "NMTOKENS", "ENTITY", "ENTITIES", or "NOTATION"

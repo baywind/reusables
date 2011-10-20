@@ -32,14 +32,15 @@ package net.rujel.reusables.xml;
 import org.xml.sax.SAXException;
 
 import com.webobjects.foundation.NSDictionary;
+import com.webobjects.foundation.NSKeyValueCoding;
 
-public abstract class GeneratorModule {
-	protected NSDictionary options;
+public abstract class GeneratorModule implements NSKeyValueCoding {
+	protected NSDictionary settings;
 	protected Object current;
 	
 	public GeneratorModule(NSDictionary options) {
 		super();
-		this.options = options;
+		this.settings = options;
 	}
 	
 	public void setCurrent(Object obj) {
@@ -48,4 +49,16 @@ public abstract class GeneratorModule {
 	
 	public abstract void generateFor(Object object, EasyGenerationContentHandlerProxy handler)
 	 throws SAXException;
+
+	public Integer sort() {
+		return new Integer(200);
+	}
+	
+	public void takeValueForKey(Object value, String key) {
+		NSKeyValueCoding.DefaultImplementation.takeValueForKey(this, value, key);
+	}
+
+	public Object valueForKey(String key) {
+		return NSKeyValueCoding.DefaultImplementation.valueForKey(this, key);
+	}
 }
