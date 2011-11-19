@@ -29,10 +29,13 @@
 
 package net.rujel.reusables.xml;
 
+import net.rujel.reusables.Counter;
+
 import org.xml.sax.SAXException;
 
 import com.webobjects.foundation.NSDictionary;
 import com.webobjects.foundation.NSKeyValueCoding;
+import com.webobjects.foundation.NSMutableDictionary;
 
 public abstract class GeneratorModule implements NSKeyValueCoding {
 	protected NSDictionary settings;
@@ -52,6 +55,20 @@ public abstract class GeneratorModule implements NSKeyValueCoding {
 
 	public Integer sort() {
 		return new Integer(200);
+	}
+	
+	public int raiseCounterForObject(Object obj) {
+		NSMutableDictionary counters = (NSMutableDictionary)settings.objectForKey("counters");
+		if(counters == null)
+			return 0;
+		Counter cnt = (Counter)counters.objectForKey(obj);
+		if(cnt == null) {
+			cnt = new Counter(1);
+			counters.setObjectForKey(cnt, obj);
+		} else {
+			cnt.raise();
+		}
+		return cnt.intValue();
 	}
 	
 	public void takeValueForKey(Object value, String key) {
