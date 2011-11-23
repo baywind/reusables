@@ -62,6 +62,24 @@ public class FlagsPresenter extends WOComponent {
         ((MutableFlags)_flags).setFlag(idx,newFlag);
     }
 	
+    public Boolean hasName() {
+    	if(item == null || item.length() == 0)
+    		return Boolean.FALSE;
+    	if(item.charAt(0) == '-' && item.charAt(item.length() -1) == '-') {
+    		if(item.length() < 3)
+    			return Boolean.FALSE;
+    		String substr = item.substring(1,item.length() -1).trim();
+    		if(substr == null || substr.length() == 0)
+    			return Boolean.FALSE;
+    		try {
+				int num = Integer.parseInt(substr);
+				if(num > 0)
+					return Boolean.FALSE;
+			} catch (NumberFormatException e) {}
+    	}
+    	return Boolean.TRUE;
+    }
+    
 	public boolean isStateless() {
 		return true;
 	}
