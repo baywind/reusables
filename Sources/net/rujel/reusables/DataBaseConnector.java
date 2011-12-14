@@ -116,6 +116,7 @@ public class DataBaseConnector {
 		
 		String serverURL = dbSettings.get("serverURL",null);
 		String urlSuffix = dbSettings.get("urlSuffix",null);
+		boolean disableSchemaUpdate = dbSettings.getBoolean("disableSchemaUpdate", false);
 		
 		boolean success = true;
 		NSMutableDictionary connDict = connectionDictionaryFromSettings(dbSettings, null);
@@ -219,7 +220,7 @@ public class DataBaseConnector {
 					ec.lock();
 					dc = EODatabaseContext.forceConnectionWithModel(model,cd,ec);
 					dc.lock();
-					success &= verifyConnection(dc, model,logger, url);
+					success &= verifyConnection(dc, model,logger, url, disableSchemaUpdate);
 				} catch (Exception e) {
 					StringBuilder message = new StringBuilder("Model '");
 					message.append(model.name());
@@ -243,7 +244,8 @@ public class DataBaseConnector {
 								try {
 									logger.info("Trying to connect to untagged database");
 									dc = EODatabaseContext.forceConnectionWithModel(model, cd, ec);
-									success &= verifyConnection(dc, model,logger,url);
+									success &= verifyConnection(
+											dc, model,logger,url, disableSchemaUpdate);
 								} catch (Exception ex) {
 									message.append("' also could not connect to database");
 									message.append('\n').append(url);
@@ -271,7 +273,7 @@ public class DataBaseConnector {
 	}
 	
 	protected static boolean verifyConnection(EODatabaseContext dc, EOModel model,
-			Logger logger, String url) {
+			Logger logger, String url, boolean noUpd) {
 		boolean success = true;
 		EOAdaptorChannel ac = dc.availableChannel().adaptorChannel();
 		NSDictionary modelInfo = model.userInfo();
@@ -285,7 +287,7 @@ public class DataBaseConnector {
 			buf.append(model.name()).append("' ORDER BY VERSION_NUMBER DESC;");
 			try {
 				EOSQLExpression expr = ac.adaptorContext().adaptor().
-				expressionFactory().expressionForString(buf.toString());
+						expressionFactory().expressionForString(buf.toString());
 				ac.evaluateExpression(expr);
 				NSArray descResults = ac.describeResults();
 				EOAttribute attr = (EOAttribute)descResults.objectAtIndex(0);
@@ -294,6 +296,8 @@ public class DataBaseConnector {
 				attr.setName("title");
 				ac.setAttributesToFetch(descResults);
 				schemaVersion = ac.fetchRow();
+				if(ac.isFetchInProgress())
+					ac.cancelFetch();
 			} catch (Exception e) {
 				logger.log(WOLogLevel.INFO,
 						"Failed to fetch schema info for model " + model.name(),e);
@@ -309,8 +313,29 @@ public class DataBaseConnector {
 					buf.append(". found version ").append(schemNum).append('(');
 					buf.append(schemaVersion.valueForKey("title")).append(')');
 				}
-				logger.severe(buf.toString());
-				success = false;
+				if(noUpd) {
+					logger.severe(buf.toString());
+					success = false;
+				} else {
+					logger.info(buf.toString());
+					buf.delete(0, buf.length());
+					try {
+						DataBaseUtility.updateModel(model, schemNum, ac);
+						buf.append("Schema for model '").append(model.name()).append("' updated");
+						if(schemaVersion != null) {
+							buf.append(" from v").append(schemNum).append(' ').append('(');
+							buf.append(schemaVersion.valueForKey("title")).append(')');
+						}
+						buf.append(" to v").append(modelNum).append(' ').append('(').append(
+								modelInfo.valueForKey("title")).append(')');
+						logger.info(buf.toString());
+					} catch (Exception e) {
+						buf.append("Failed to update schema for model '");
+						buf.append(model.name()).append('\'');
+						logger.log(WOLogLevel.SEVERE,buf.toString(),e);
+						success = false;
+					}
+				}
 			}
 		} // check modelInfo
 		ac.closeChannel();
