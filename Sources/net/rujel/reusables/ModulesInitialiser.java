@@ -262,6 +262,15 @@ public class ModulesInitialiser implements NSKeyValueCoding {
 	}
 	
 	public Object valueForKey(String key) {
+		if(key.charAt(0) == '@') {
+			String test = key.substring(1);
+			for (int i = 0; i < modules.length; i++) {
+				String module = modules[i].getDeclaringClass().getName();
+				if(module.contains(test))
+					return module;
+			}
+			return null;
+		}
 		return useModules(key);
 	}
 	
