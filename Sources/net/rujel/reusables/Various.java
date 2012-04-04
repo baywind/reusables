@@ -275,4 +275,27 @@ public class Various {
 		}
 		return result;
 	}
+	
+	public static void addToSortedList(Object toAdd, NSMutableArray list,
+			String key, NSSelector order) {
+		if(list.count() == 0) {
+			list.addObject(toAdd);
+			return;
+		}
+		Object value = (key == null)?toAdd:NSKeyValueCoding.Utility.valueForKey(toAdd, key);
+		if(value == null) {
+			list.addObject(toAdd);
+			return;
+		}
+		for (int i = 0; i < list.count(); i++) {
+			Object item = list.objectAtIndex(i);
+			if(key != null)
+				item = NSKeyValueCoding.Utility.valueForKey(item, key);
+			if(EOSortOrdering.ComparisonSupport.compareValues(value, item, order) < 0) {
+				list.insertObjectAtIndex(toAdd, i);
+				return;
+			}
+		}
+		list.addObject(toAdd);
+	}
 }
