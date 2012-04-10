@@ -287,7 +287,20 @@ public class Various {
 			list.addObject(toAdd);
 			return;
 		}
-		for (int i = 0; i < list.count(); i++) {
+		int ib = 0;
+		int it = list.count();
+		while((it - ib) > 5) {
+			int i = (it + ib) / 2;
+			Object item = list.objectAtIndex(i);
+			if(key != null)
+				item = NSKeyValueCoding.Utility.valueForKey(item, key);
+			if(EOSortOrdering.ComparisonSupport.compareValues(value, item, order) < 0) {
+				it = i;
+			} else {
+				ib = i;
+			}
+		}
+		for (int i = ib; i < it; i++) {
 			Object item = list.objectAtIndex(i);
 			if(key != null)
 				item = NSKeyValueCoding.Utility.valueForKey(item, key);
@@ -296,6 +309,9 @@ public class Various {
 				return;
 			}
 		}
-		list.addObject(toAdd);
+		if(it < list.count())
+			list.insertObjectAtIndex(toAdd, it);
+		else
+			list.addObject(toAdd);
 	}
 }
