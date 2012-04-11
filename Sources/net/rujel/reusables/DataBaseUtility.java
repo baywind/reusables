@@ -30,6 +30,7 @@
 package net.rujel.reusables;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
@@ -40,6 +41,7 @@ import java.util.logging.Logger;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.sql.Statement;
 
 import com.webobjects.appserver.WOApplication;
@@ -146,6 +148,22 @@ public class DataBaseUtility {
 					"Update script failed to update schema to actual model version");
 	}
 	
+	public static boolean createDatabaseForModel(EOModel model) {
+		NSDictionary modelInfo = model.userInfo();
+		if(modelInfo == null) {
+			return false;
+		}
+		String scriptName = (String)modelInfo.valueForKey("creationScript");
+		if(scriptName == null)
+			return false;
+		String framework = (String)modelInfo.valueForKey("framework");
+		InputStream script = WOApplication.application().resourceManager().
+				inputStreamForResourceNamed(scriptName, framework, null);
+		if(script == null)
+			return false;
+		return executeScript(script);
+	}
+	
 	public static boolean executeScript(InputStream script) {
 		return executeScript(script, null);
 	}
@@ -154,12 +172,8 @@ public class DataBaseUtility {
 		if(script == null)
 			return false;
 		SettingsReader dbSettings = SettingsReader.settingsForPath("dbConnection", false);
-		String serverURL = dbSettings.get("serverURL",null);
-		String urlSuffix = dbSettings.get("urlSuffix",null);
-		if(serverURL == null)
+		if(dbSettings == null)
 			return false;
-		if(urlSuffix != null)
-			serverURL = serverURL + urlSuffix; 
 		SettingsReader dbMapping = dbSettings.subreaderForPath("dbMapping", false);
 		NSMutableDictionary mapping = null;
 		if(params != null) {
@@ -199,45 +213,67 @@ public class DataBaseUtility {
 			}
 		}
 		try {
-		      Properties connectionProps = new Properties();
-		      connectionProps.put("user", dbSettings.get("username", "rujel"));
-		      connectionProps.put("password", dbSettings.get("password", "RUJELpassword"));
-		      urlSuffix = dbSettings.get("driver",null);
-		      if(urlSuffix != null) {
-		    	  Class driverClass = Class.forName(urlSuffix);
-		    	  Constructor driverConstructor = driverClass.getConstructor((Class[])null);
-		    	  Driver driver = (Driver)driverConstructor.newInstance((Object[])null);
-		    	  DriverManager.registerDriver(driver);
+		      Connection conn = getConnection(dbSettings);
+		      if(conn == null) {
+		    	  logger.log(WOLogLevel.SEVERE,
+		    			  "Failed to get database connection for script execution");
+		    	  return false;
 		      }
-		      Connection conn = DriverManager.getConnection(serverURL,connectionProps);
-		      Statement stmnt = conn.createStatement();
-		      StringBuilder buf = new StringBuilder();
-		      BufferedReader sql = new BufferedReader(new InputStreamReader(script,"utf8"));
-		      int upd = 0;
-		      while(true) {
-		    	  String line = sql.readLine();
-		    	  if(line == null)
-		    		  break;
-		    	  line = line.trim();
-		    	  if(line.length() == 0)
-		    		  continue;
-		    	  if(line.startsWith("--"))
-		    		  continue;
-		    	  if(buf.length() > 0)
-		    		  buf.append('\n');
-		    	  buf.append(line);
-		    	  if(line.charAt(line.length() -1) == ';') {
-		    		  replace(buf, mapping);
-		    		  line = buf.toString();
-		    		  buf.delete(0, buf.length());
-		    		  upd += stmnt.executeUpdate(line);
-		    	  }
-		      }
+		      executeScript(conn, script, mapping);
 		} catch (Exception e) {
 			logger.log(WOLogLevel.SEVERE,"Error executing database script",e);
 			return false;
 		}
 		return true;
+	}
+	
+	protected static Connection getConnection(SettingsReader dbSettings) throws Exception {
+		if(dbSettings == null)
+			dbSettings = SettingsReader.settingsForPath("dbConnection", false);
+		String serverURL = dbSettings.get("serverURL",null);
+		String urlSuffix = dbSettings.get("urlSuffix",null);
+		if(serverURL == null)
+			return null;
+		if(urlSuffix != null)
+			serverURL = serverURL + urlSuffix; 
+		Properties connectionProps = new Properties();
+		connectionProps.put("user", dbSettings.get("username", "rujel"));
+		connectionProps.put("password", dbSettings.get("password", "RUJELpassword"));
+		urlSuffix = dbSettings.get("driver",null);
+		if(urlSuffix != null) {
+			Class driverClass = Class.forName(urlSuffix);
+			Constructor driverConstructor = driverClass.getConstructor((Class[])null);
+			Driver driver = (Driver)driverConstructor.newInstance((Object[])null);
+			DriverManager.registerDriver(driver);
+		}
+		return DriverManager.getConnection(serverURL,connectionProps);
+	}
+	
+	protected static void executeScript(Connection conn, InputStream script, NSDictionary mapping)
+			throws SQLException, IOException {
+	      Statement stmnt = conn.createStatement();
+	      StringBuilder buf = new StringBuilder();
+	      BufferedReader sql = new BufferedReader(new InputStreamReader(script,"utf8"));
+	      int upd = 0;
+	      while(true) {
+	    	  String line = sql.readLine();
+	    	  if(line == null)
+	    		  break;
+	    	  line = line.trim();
+	    	  if(line.length() == 0)
+	    		  continue;
+	    	  if(line.startsWith("--"))
+	    		  continue;
+	    	  if(buf.length() > 0)
+	    		  buf.append('\n');
+	    	  buf.append(line);
+	    	  if(line.charAt(line.length() -1) == ';') {
+	    		  replace(buf, mapping);
+	    		  line = buf.toString();
+	    		  buf.delete(0, buf.length());
+	    		  upd += stmnt.executeUpdate(line);
+	    	  }
+	      }
 	}
 	
 	private static void replace(StringBuilder buf, NSDictionary mapping) {

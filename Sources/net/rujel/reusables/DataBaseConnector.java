@@ -228,12 +228,28 @@ public class DataBaseConnector {
 					message.append("' could not connect to database");
 					if(url != null)
 						message.append('\n').append(url);
+					logger.log((noSettings)? WOLogLevel.INFO : WOLogLevel.WARNING,
+							message.toString(), e);
+					if(!disableSchemaUpdate 
+							&& e.getMessage().toLowerCase().startsWith("unknown database")
+							&& DataBaseUtility.createDatabaseForModel(model)) {
+						logger.log(WOLogLevel.INFO,
+								"Autocreated database for model " + model.name());
+						try {
+							dc = EODatabaseContext.forceConnectionWithModel(model,cd,ec);
+							dc.lock();
+							success &= verifyConnection(dc, model,logger, url, disableSchemaUpdate);
+						} catch (Exception e2) {
+							message.delete(len, message.length());
+							message.append("' also could not connect to autocreated database");
+							message.append('\n').append(url);
+							logger.log(WOLogLevel.WARNING, message.toString(), e2);
+						}
+					}
 					if(noSettings) {
-						logger.log(WOLogLevel.INFO, message.toString());
 //						mg.removeModel(model);
 					} else {
 						success = false;
-						logger.log(WOLogLevel.WARNING, message.toString(), e);
 						if(url != null) {
 							String untagged = (currSettings==null)?null:
 								currSettings.get("untagged", null);
@@ -244,6 +260,7 @@ public class DataBaseConnector {
 								try {
 									logger.info("Trying to connect to untagged database");
 									dc = EODatabaseContext.forceConnectionWithModel(model, cd, ec);
+									dc.lock();
 									success &= verifyConnection(
 											dc, model,logger,url, disableSchemaUpdate);
 								} catch (Exception ex) {
