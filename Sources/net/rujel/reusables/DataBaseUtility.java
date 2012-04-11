@@ -159,8 +159,11 @@ public class DataBaseUtility {
 		String framework = (String)modelInfo.valueForKey("framework");
 		InputStream script = WOApplication.application().resourceManager().
 				inputStreamForResourceNamed(scriptName, framework, null);
-		if(script == null)
+		if(script == null) {
+			logger.log(WOLogLevel.WARNING, "Autocreation script '" + scriptName + 
+					"' for model '" + model.name() + "' was not found.");
 			return false;
+		}
 		return executeScript(script);
 	}
 	
