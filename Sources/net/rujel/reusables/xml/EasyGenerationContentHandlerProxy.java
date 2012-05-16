@@ -89,6 +89,8 @@ public class EasyGenerationContentHandlerProxy implements ContentHandler {
      * @param value Value for the attribute.
      */
     public void prepareAttribute(String name, String value) {
+    	if(value == null)
+    		value = "";
     	prepareAttribute(name, "CDATA", value);
     }
     
@@ -110,6 +112,8 @@ public class EasyGenerationContentHandlerProxy implements ContentHandler {
      * @param value Value for the attribute.
      */
     public void prepareAttribute(String name, String type, String value) {
+    	if(value == null)
+    		return;
     	if(attributes == null)
     		attributes = new AttributesImpl();
     	attributes.addAttribute(null, name, name, type, value);

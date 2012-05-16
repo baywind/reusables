@@ -33,6 +33,7 @@ import net.rujel.reusables.Counter;
 
 import org.xml.sax.SAXException;
 
+import com.webobjects.foundation.NSArray;
 import com.webobjects.foundation.NSDictionary;
 import com.webobjects.foundation.NSKeyValueCoding;
 import com.webobjects.foundation.NSMutableDictionary;
@@ -53,6 +54,15 @@ public abstract class GeneratorModule implements NSKeyValueCoding {
 	public abstract void generateFor(Object object, EasyGenerationContentHandlerProxy handler)
 	 throws SAXException;
 
+	public void preload(String forTag, NSArray objects) {
+		
+	}
+
+	public void unload(String forTag) {
+		
+	}
+
+	
 	public Integer sort() {
 		return new Integer(200);
 	}
