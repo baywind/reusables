@@ -330,7 +330,7 @@ public class DataBaseConnector {
 					buf.append(". found version ").append(schemNum).append('(');
 					buf.append(schemaVersion.valueForKey("title")).append(')');
 				}
-				if(noUpd) {
+				if(noUpd || schemNum > modelNum) {
 					logger.severe(buf.toString());
 					success = false;
 				} else {
