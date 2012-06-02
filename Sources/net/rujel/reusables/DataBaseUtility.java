@@ -288,7 +288,8 @@ public class DataBaseUtility {
 			String replacement = (String)mapping.valueForKey(key);
 			int idx = buf.indexOf(key);
 			while (idx >=0) {
-				buf.replace(idx, idx + key.length(), replacement);
+				if(buf.charAt(idx -1) == '`')
+					buf.replace(idx, idx + key.length(), replacement);
 				idx = buf.indexOf(key, idx + replacement.length());
 			}
 		}

@@ -238,7 +238,9 @@ public class DataBaseConnector {
 						try {
 							dc = EODatabaseContext.forceConnectionWithModel(model,cd,ec);
 							dc.lock();
-							success &= verifyConnection(dc, model,logger, url, disableSchemaUpdate);
+							if(verifyConnection(dc, model,logger, url, disableSchemaUpdate)) {
+								continue;
+							}
 						} catch (Exception e2) {
 							message.delete(len, message.length());
 							message.append("' also could not connect to autocreated database");
@@ -247,9 +249,10 @@ public class DataBaseConnector {
 						}
 					}
 					if(noSettings) {
-//						mg.removeModel(model);
+						logger.config("Skipping model '" + model.name() + '\'');
+						mg.removeModel(model);
 					} else {
-						success = false;
+						boolean retry = false;
 						if(url != null) {
 							String untagged = (currSettings==null)?null:
 								currSettings.get("untagged", null);
@@ -261,7 +264,7 @@ public class DataBaseConnector {
 									logger.info("Trying to connect to untagged database");
 									dc = EODatabaseContext.forceConnectionWithModel(model, cd, ec);
 									dc.lock();
-									success &= verifyConnection(
+									retry = verifyConnection(
 											dc, model,logger,url, disableSchemaUpdate);
 								} catch (Exception ex) {
 									message.append("' also could not connect to database");
@@ -270,6 +273,7 @@ public class DataBaseConnector {
 								}
 							}
 						}
+						success &= retry;
 					}
 				} finally {
 					if(dc != null)
