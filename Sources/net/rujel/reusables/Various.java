@@ -314,4 +314,28 @@ public class Various {
 		else
 			list.addObject(toAdd);
 	}
+	
+	public static int correlation(String str1, String str2) {
+		int result = 0;
+		for (int d = 2 - str1.length(); d <= str2.length() -2; d++) {
+			boolean row = false;
+			int i1 = (d < 0)? -d : 0;
+			int i2 = i1 + d;
+			while (i1 < str1.length() && i2 < str2.length()) {
+				char c1 = Character.toLowerCase(str1.charAt(i1));
+				char c2 = Character.toLowerCase(str2.charAt(i2));
+				if(c1 == c2) {
+					if(row)
+						result++;
+					else
+						row = true;
+				} else {
+					row = false;
+				}
+				i1++;
+				i2++;
+			}
+		}
+		return result;
+	}
 }
