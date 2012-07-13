@@ -32,6 +32,7 @@ package net.rujel.reusables;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 import com.webobjects.eocontrol.*;
 import com.webobjects.appserver.*;
@@ -92,7 +93,7 @@ public class SessionedEditingContext extends EOEditingContext {
 			((MultiECLockManager.Session)session).
 						ecLockManager().unregisterEditingContext(this);
 		if(_stackTraces.count() > 0)
-			logger.log(WOLogLevel.WARNING,"disposing locked editing context (" + 
+			logger.log(Level.WARNING,"disposing locked editing context (" + 
 					_nameOfLockingThread + " : " + _stackTraces.count() + ')', new Object[] 
 					             {session, new Exception(), _stackTraces});		
 	}
@@ -118,7 +119,8 @@ public class SessionedEditingContext extends EOEditingContext {
 
 	   public void lock() {
 	       String nameOfCurrentThread = Thread.currentThread().getName();
-	       String trace = WOLogFormatter.formatTrowable(new Exception(df.format(new Date())));
+	       Exception e = new Exception(df.format(new Date()));
+	       String trace = WOLogFormatter.formatTrowable(e);
 	       if (_stackTraces.count() == 0) {
 	           _stackTraces.addObject(trace);
 	           _nameOfLockingThread = nameOfCurrentThread;
@@ -126,10 +128,18 @@ public class SessionedEditingContext extends EOEditingContext {
 	           if (nameOfCurrentThread.equals(_nameOfLockingThread)) {
 	               _stackTraces.addObject(trace);
 	           } else {
-	               logger.log(WOLogLevel.INFO,
+	        	   Level level = Level.INFO;
+	        	   StackTraceElement stack[] = e.getStackTrace();
+	        	   for (int i = 0; i < stack.length; i++) {
+	        		   if(stack[i].getClassName().contains("NSNotificationCenter")) {
+	        			   level = Level.FINER;
+	        			   break;
+	        		   }
+	        	   }
+	               logger.log(level,
 	            		   "Attempting to lock editing context from " + nameOfCurrentThread
 	            		   + " that was previously locked in " + _nameOfLockingThread,
-	            		   new  Object[] {session,trace,_stackTraces});
+	            		   new  Object[] {session,stack,_stackTraces});
 	           }
 	       }
 	       super.lock();
@@ -148,7 +158,7 @@ public class SessionedEditingContext extends EOEditingContext {
 	   public void insertObject(EOEnterpriseObject object) {
 		   super.insertObject(object);
 		   if(!globalIDForObject(object).isTemporary())
-			   logger.log((inRevert)?WOLogLevel.FINER:WOLogLevel.INFO,
+			   logger.log((inRevert)?Level.FINER:Level.INFO,
 					   "Inserting not new object",new Object[] {session,object, new Exception()});
 	   }
 
