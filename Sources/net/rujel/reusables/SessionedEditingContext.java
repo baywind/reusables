@@ -139,7 +139,7 @@ public class SessionedEditingContext extends EOEditingContext {
 	               logger.log(level,
 	            		   "Attempting to lock editing context from " + nameOfCurrentThread
 	            		   + " that was previously locked in " + _nameOfLockingThread,
-	            		   new  Object[] {session,stack,_stackTraces});
+	            		   new  Object[] {session,e,_stackTraces});
 	           }
 	       }
 	       super.lock();
