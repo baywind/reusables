@@ -284,6 +284,7 @@ public class DataBaseConnector {
 		} // while (models.hasMoreElements())
 		if(tag != null && os != null) {
 			Object store = (success)?os: NSKeyValueCoding.NullValue;
+			((EOObjectStore)os).setUserInfoForKey(tag, "tag");
 			if(coordinatorsByTag == null)
 				coordinatorsByTag = new NSMutableDictionary(store,tag);
 			else
