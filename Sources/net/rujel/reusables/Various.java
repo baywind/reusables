@@ -278,6 +278,8 @@ public class Various {
 	
 	public static void addToSortedList(Object toAdd, NSMutableArray list,
 			String key, NSSelector order) {
+		if(order == null)
+			order = EOSortOrdering.CompareAscending;
 		if(list.count() == 0) {
 			list.addObject(toAdd);
 			return;
