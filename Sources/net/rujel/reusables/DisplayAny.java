@@ -395,7 +395,23 @@ public class DisplayAny extends ExtDynamicElement {
 
     	public static Object evaluateDict(NSDictionary dict, 
     			Object refObject, WOComponent page) {
-			Object tmp = dict.valueForKey("methodName");
+			Object tmp = dict.valueForKey("dict");
+			if(tmp instanceof NSDictionary) {
+				NSDictionary values = (NSDictionary)tmp;
+				tmp = dict.valueForKey("key");
+				if(tmp != null) {
+					tmp = evaluateValue(tmp,refObject, page);
+				}
+				if(tmp == null) {
+					if(refObject == null)
+						return null;
+					tmp = refObject;
+				}
+				String key = tmp.toString();
+				Object result = values.valueForKey(key);
+				return result;
+			}
+			tmp = dict.valueForKey("methodName");
 			if(tmp == null)
 				return dict;
 			if(refObject == null && Various.boolForObject(dict.valueForKey("nullNull")))
