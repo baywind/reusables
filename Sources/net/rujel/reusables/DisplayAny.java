@@ -68,8 +68,9 @@ public class DisplayAny extends ExtDynamicElement {
 						((String)value).charAt(0) == '.') {
 					if(valueBinding.isValueConstant()) {
 						Object bind = valueBinding.valueInComponent(null);
-						bind = NSKeyValueCodingAdditions.Utility.valueForKeyPath(bind,
-								((String)value).substring(1));
+						if(bind != null)
+							bind = NSKeyValueCodingAdditions.Utility.valueForKeyPath(bind,
+									((String)value).substring(1));
 						as = WOAssociation.associationWithValue(bind);
 					} else {
 						String keyPath = valueBinding.keyPath() + value;
