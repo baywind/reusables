@@ -368,7 +368,7 @@ public class DisplayAny extends ExtDynamicElement {
 			return false;
 		}
 		public boolean isValueConstant() {
-			return true;
+			return sup.isValueConstant();
 		}
 		public boolean isValueSettableInComponent(WOComponent aComponent) {
 			return sup.isValueSettableInComponent(aComponent);
