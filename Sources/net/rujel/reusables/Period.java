@@ -65,9 +65,18 @@ public interface Period {
 		public Date end() {
 			return end;
 		}
+		
 		public static  boolean periodContains(Period period, Date date) {
+			if(period.begin() == null) {
+				if(period.end() == null)
+					return true;
+				return (date.compareTo(period.end()) <= 0);
+			}
+			if(period.end() == null)
+				return (date.compareTo(period.begin()) >= 0);
 			return (date.compareTo(period.begin()) >= 0 && date.compareTo(period.end()) <= 0);
 		}
+		
 		public boolean contains(Date date) {
 			return periodContains(this, date);
 		}
