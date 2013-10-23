@@ -227,10 +227,27 @@ public class FileLister extends WOComponent {
 	public String onDelClick() {
 		StringBuilder buf = new StringBuilder("if(confirm('");
 		buf.append(session().valueForKeyPath("strings.Reusables_Strings.uiElements.Delete"));
-		buf.append(' ').append(item.getName());
-		buf.append("?'))window.location='");
-		buf.append(context().componentActionURL()).append("';");
+		buf.append(' ').append(item.getName()).append("?'))");
+		String onclick = (String)valueForBinding("onClick");
+		if(onclick == null)
+			buf.append("window.location='").append(context().componentActionURL()).append("';");
+		else
+			buf.append(onclick);
 		return buf.toString();
+	}
+	
+	public String actionOnClick() {
+		if(item.isDirectory()) {
+			return (String)valueForBinding("onClick");
+		} else {
+			String loadTarget = (String)valueForBinding("loadTarget");
+			if(loadTarget != null) {
+				StringBuilder buf = new StringBuilder("window.open('");
+				buf.append(context().componentActionURL()).append("','");
+				buf.append(loadTarget).append("');");
+			}
+		}
+		return null;
 	}
 	
 	public WOActionResults delete() {
