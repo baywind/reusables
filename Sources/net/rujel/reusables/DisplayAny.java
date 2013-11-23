@@ -547,7 +547,8 @@ public class DisplayAny extends ExtDynamicElement {
     	public static Object coerceToClass(Object obj, Class cl) throws Exception{
     		if(obj == null || cl.isInstance(obj))
     			return obj;
-
+    		if(cl.isAssignableFrom(String.class))
+    			return obj.toString();
     		if(cl == Integer.TYPE || cl == Integer.class) {
     			if(obj instanceof Number)
     				return new Integer(((Number)obj).intValue());
@@ -557,9 +558,6 @@ public class DisplayAny extends ExtDynamicElement {
     			return new Character(obj.toString().charAt(0));
     		} else if(cl == Boolean.TYPE || cl == Boolean.class) {
     			return new Boolean(Various.boolForObject(obj));
-    		} else if(Number.class.isAssignableFrom(cl) || cl.isPrimitive()) {
-    			Constructor cn = cl.getConstructor(String.class);
-    			return cn.newInstance(obj.toString());
     		} else if(cl == Long.TYPE || cl == Long.class) {
     			if(obj instanceof Number)
     				return new Long(((Number)obj).longValue());
@@ -585,6 +583,9 @@ public class DisplayAny extends ExtDynamicElement {
     				return new Byte(((Number)obj).byteValue());
     			else if (obj instanceof String)
     				return new Byte((String)obj);
+    		} else if(Number.class.isAssignableFrom(cl)) {
+    			Constructor cn = cl.getConstructor(String.class);
+    			return cn.newInstance(obj.toString());
     		}
     		throw new IllegalArgumentException("Could not coerce argument of type" +
     				obj.getClass().getName() + " to required type" + cl.getName());
