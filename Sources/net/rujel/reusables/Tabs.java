@@ -245,6 +245,7 @@ public class Tabs extends WOComponent {
 		public boolean defaultCurrent();
 		
 		public boolean equals(Object aTab);
+		public Period period();
 	}
 
 	public String tabID() {
