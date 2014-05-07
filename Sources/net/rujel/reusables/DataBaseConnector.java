@@ -142,24 +142,18 @@ public class DataBaseConnector {
 				continue;
 			}
 			NSMutableDictionary cd = connDict.mutableClone();
-			String url = null;
+			String url = dbSettings.get("globalURL",null);
 			String dbName = null;
 			if(currSettings != null) {
 				cd = connectionDictionaryFromSettings(currSettings, cd);
-				url = currSettings.get("URL", null);
-				if(url == null)
-					dbName = currSettings.get("dbName", null);
-				if(dbName != null && dbMapping != null) {
+				url = currSettings.get("URL", url);
+				dbName = currSettings.get("dbName", null);
+				if(dbName != null) {
+				if(dbMapping != null) {
 					Object mapped = dbMapping.valueForKey(dbName);
-					if(mapped == null && tag != null)
-						mapped = dbMapping.valueForKey(String.format(dbName, tag));
 					if(mapped != null) {
 						if(mapped instanceof String) {
 							dbName = (String)mapped;
-							if(dbName.startsWith("jdbc")) {
-								url = dbName;
-								dbName = null;
-							}
 						} else if(mapped instanceof SettingsReader) {
 							cd = connectionDictionaryFromSettings((SettingsReader)mapped, cd);
 							url = ((SettingsReader)mapped).get("URL", null);
@@ -168,6 +162,13 @@ public class DataBaseConnector {
 						}
 					}
 				}
+				if(tag != null)
+					dbName = String.format(dbName, tag);
+				if(dbName.startsWith("jdbc")) {
+					url = dbName;
+					dbName = null;
+				}
+				} //(dbName != null)
 			}
 			if(url == null && serverURL != null) {
 				boolean onlyHostname = !serverURL.startsWith("jdbc");
@@ -202,8 +203,6 @@ public class DataBaseConnector {
 							if((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9'))
 								buf.append('/');
 						}
-						if(tag != null)
-							dbName = String.format(dbName, tag);
 						buf.append(dbName);
 					}
 					if(urlSuffix != null)
@@ -215,6 +214,16 @@ public class DataBaseConnector {
 				cd.takeValueForKey(url, "URL");
 			}
 			if(cd.count() > 0) {
+				String usernameForDB = dbSettings.get("usernameForDB",null);
+				if(Various.boolForObject(usernameForDB)) {
+					if(dbName == null)
+						dbName = model.name();
+					if(usernameForDB.equalsIgnoreCase("lowercase"))
+						dbName = dbName.toLowerCase();
+					else if(usernameForDB.equalsIgnoreCase("uppercase"))
+						dbName = dbName.toUpperCase();
+					cd.takeValueForKey(dbName, "username");
+				}
 				EODatabaseContext dc = null;
 				try {
 					ec.lock();

@@ -271,7 +271,7 @@ public class DisplayAny extends ExtDynamicElement {
 				continue;
 			}
 			String sub = format.substring(idx + 2, end);
-			if(format.charAt(end +1) == '$') {
+			if(format.length() > (end+1) && format.charAt(end +1) == '$') {
 				int keyidx = keyset.indexOf(sub);
 				if(keyidx < 0) {
 					keyset.addObject(sub);
