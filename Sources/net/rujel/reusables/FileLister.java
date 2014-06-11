@@ -237,17 +237,16 @@ public class FileLister extends WOComponent {
 	}
 	
 	public String actionOnClick() {
-		if(item.isDirectory()) {
-			return (String)valueForBinding("onClick");
-		} else {
+		if(!item.isDirectory()) {
 			String loadTarget = (String)valueForBinding("loadTarget");
 			if(loadTarget != null) {
 				StringBuilder buf = new StringBuilder("window.open('");
 				buf.append(context().componentActionURL()).append("','");
 				buf.append(loadTarget).append("');");
+				return buf.toString();
 			}
 		}
-		return null;
+		return (String)valueForBinding("onClick");
 	}
 	
 	public WOActionResults delete() {
