@@ -30,6 +30,7 @@
 package net.rujel.reusables;
 
 import com.webobjects.foundation.*;
+import com.webobjects.jdbcadaptor.JDBCAdaptorException;
 //import com.webobjects.eocontrol.*;
 import com.webobjects.eoaccess.*;
 import com.webobjects.eocontrol.EOEditingContext;
@@ -46,6 +47,7 @@ public class DataBaseConnector {
 	                                      {"username","password","driver","plugin"};
 	
 	protected static NSMutableDictionary coordinatorsByTag;
+	protected static NSMutableDictionary cdForDB = new NSMutableDictionary();
 	
 	protected static NSMutableDictionary connectionDictionaryFromSettings (
 			SettingsReader settings, NSMutableDictionary dict) {
@@ -61,18 +63,14 @@ public class DataBaseConnector {
 		return dict;
 	}
 
-	public static boolean makeConnections() {
-		return makeConnections(null,null);
-	}
-	
 	protected static EOEntity prototypesEntity;
-	public static boolean makeConnections(EOObjectStore os, String tag) {
+	public static NSArray makeConnections(String tag, NSArray models, boolean canCreate) {
 		Logger logger = Logger.getLogger("rujel.dbConnection");
 		SettingsReader dbSettings = SettingsReader.settingsForPath("dbConnection", false);
 		if(dbSettings == null) {
 			logger.log(WOLogLevel.CONFIG,
 					"No database connection settings found. Using predefined connections.");
-			return false;
+			return NSArray.EmptyArray;
 		}
 		EOModelGroup mg = EOModelGroup.defaultGroup();
 		String prototypes = dbSettings.get("prototypes",null);
@@ -118,9 +116,9 @@ public class DataBaseConnector {
 		String urlSuffix = dbSettings.get("urlSuffix",null);
 		boolean disableSchemaUpdate = dbSettings.getBoolean("disableSchemaUpdate", false);
 		
-		boolean success = true;
+		NSMutableArray success = new NSMutableArray();
 		NSMutableDictionary connDict = connectionDictionaryFromSettings(dbSettings, null);
-		EOEditingContext ec = (os != null)?new EOEditingContext(os):new EOEditingContext();
+//		EOEditingContext ec = (os != null)?new EOEditingContext(os):new EOEditingContext();
 		SettingsReader dbMapping = dbSettings.subreaderForPath("dbMapping", false);
 		while (enu.hasMoreElements()) {
 			EOModel model = (EOModel) enu.nextElement();
@@ -135,85 +133,82 @@ public class DataBaseConnector {
 				continue;
 			}
 			SettingsReader currSettings = dbSettings.subreaderForPath(model.name(), false);
-			boolean noSettings = (currSettings == null); 
-			if(!noSettings && currSettings.getBoolean("skip", false)) {
+			if((model != null && !models.containsObject(model.name())) ||
+					(currSettings != null && currSettings.getBoolean("skip", false))) {
 				mg.removeModel(model);
-				logger.config("Skipping model '" + model.name() + '\'');
+				logger.config("Omitting model '" + model.name() + '\'');
 				continue;
 			}
-			NSMutableDictionary cd = connDict.mutableClone();
+			NSMutableDictionary cd = null;
 			String url = dbSettings.get("globalURL",null);
 			String dbName = null;
 			if(currSettings != null) {
-				cd = connectionDictionaryFromSettings(currSettings, cd);
 				url = currSettings.get("URL", url);
 				dbName = currSettings.get("dbName", null);
 				if(dbName != null) {
-				if(dbMapping != null) {
-					Object mapped = dbMapping.valueForKey(dbName);
-					if(mapped != null) {
-						if(mapped instanceof String) {
-							dbName = (String)mapped;
-						} else if(mapped instanceof SettingsReader) {
-							cd = connectionDictionaryFromSettings((SettingsReader)mapped, cd);
-							url = ((SettingsReader)mapped).get("URL", null);
-							if(url == null)
-								dbName = ((SettingsReader)mapped).get("dbName", null);
+					if(dbMapping != null) {
+						Object mapped = dbMapping.valueForKey(dbName);
+						if(mapped != null) {
+							if(mapped instanceof String) {
+								dbName = (String)mapped;
+							} else if(mapped instanceof SettingsReader) {
+								cd = connDict.mutableClone();
+								cd = connectionDictionaryFromSettings((SettingsReader)mapped, cd);
+								url = ((SettingsReader)mapped).get("URL", null);
+								if(url == null)
+									dbName = ((SettingsReader)mapped).get("dbName", null);
+							}
 						}
 					}
-				}
-				if(tag != null)
-					dbName = String.format(dbName, tag);
-				if(dbName.startsWith("jdbc")) {
-					url = dbName;
-					dbName = null;
-				}
+					if(tag != null && dbName.contains("%s"))
+						dbName = String.format(dbName, tag);
+					if(dbName.startsWith("jdbc")) {
+						url = dbName;
+						dbName = null;
+					} else {
+						cd = (NSMutableDictionary)cdForDB.valueForKey(dbName);
+						if(cd == null) {
+							cd = connDict.mutableClone();
+							cd = connectionDictionaryFromSettings(currSettings, cd);
+							cdForDB.takeValueForKey(cd, dbName);
+						} else if(cd.valueForKey("error") != null) {
+							continue;
+						} else {
+							model.setConnectionDictionary(cd);
+							Object res = verifyConnection(EOObjectStoreCoordinator.defaultCoordinator(),
+									model, logger, disableSchemaUpdate, !canCreate);
+							if(res != null) {
+								if(res instanceof Number)
+									model.userInfo().takeValueForKey(res, "versionFound");
+								success.addObject(model);
+							}
+							continue;
+						}
+					}
 				} //(dbName != null)
 			}
-			if(url == null && serverURL != null) {
-				boolean onlyHostname = !serverURL.startsWith("jdbc");
-				String urlFromModel = (String)model.connectionDictionary().valueForKey("URL");
-				if(dbName == null && onlyHostname) {
-					url = urlFromModel.replaceFirst("localhost", serverURL);
-					if(urlSuffix != null) {
-						int idx = url.indexOf('?');
-						if(idx > 0)
-							url = url.substring(0,idx);
-						url = url + urlSuffix;
-					}
-				} else {
-					int index = urlFromModel.indexOf("localhost");
-					StringBuffer buf = new StringBuffer(serverURL);
-					if (onlyHostname)
-						buf.insert(0, urlFromModel.substring(0, index));
-					if(buf.charAt(buf.length() -1) == '/')
-						buf.deleteCharAt(buf.length() -1);
-					if(dbName == null) {
-						int idx = urlFromModel.indexOf('?',index + 9);
-						if(idx > 0 && urlSuffix != null) {
-							buf.append(urlFromModel.substring(index + 9,idx));
-						} else {
-							buf.append(urlFromModel.substring(index + 9));
-						}
-					} else {
-						if(onlyHostname)
-							buf.append(urlFromModel.charAt(index + 9));
-						else {
-							char c = buf.charAt(buf.length() -1);
-							if((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9'))
-								buf.append('/');
-						}
-						buf.append(dbName);
-					}
-					if(urlSuffix != null)
-						buf.append(urlSuffix);
-					url = buf.toString();
-				}
-			} // if(url == null && serverURL != null)
-			if(url != null) {
-				cd.takeValueForKey(url, "URL");
-			}
+			if(cd == null)
+				cd = connDict.mutableClone();
 			if(cd.count() > 0) {
+				if(url == null && serverURL != null)
+					url = prepareConnectionURL(serverURL, urlSuffix, model, dbName);
+				if(url != null) {
+					cd.takeValueForKey(url, "URL");
+				}
+				String changeCase = dbSettings.get("changeCase",null);
+				if(changeCase != null) {
+					if(dbName == null)
+						dbName = DataBaseUtility.extractDBfromURL(url)[1];
+					String tmp = dbName;
+					if(changeCase.equalsIgnoreCase("lowercase"))
+						dbName = dbName.toLowerCase();
+					else if(changeCase.equalsIgnoreCase("uppercase"))
+						dbName = dbName.toUpperCase();
+					if(url != null) {
+						url = url.replaceAll(tmp, dbName);
+						cd.takeValueForKey(url, "URL");
+					}
+				}
 				String usernameForDB = dbSettings.get("usernameForDB",null);
 				if(Various.boolForObject(usernameForDB)) {
 					if(dbName == null)
@@ -223,7 +218,11 @@ public class DataBaseConnector {
 					else if(usernameForDB.equalsIgnoreCase("uppercase"))
 						dbName = dbName.toUpperCase();
 					cd.takeValueForKey(dbName, "username");
-				}
+				} // usernameForDB
+				model.setConnectionDictionary(cd);
+			}
+			/*
+			if(cd.count() > 0) {
 				EODatabaseContext dc = null;
 				try {
 					ec.lock();
@@ -288,35 +287,106 @@ public class DataBaseConnector {
 					if(dc != null)
 						dc.unlock();
 					ec.unlock();
-				}
+				} 
+			} // cd.count() > 0
+			 */			
+//			EODatabaseContext dc = EODatabaseContext.registeredDatabaseContextForModel(model, os);
+//			EOAdaptorChannel ac = dc.availableChannel().adaptorChannel();
+//			ac.closeChannel();
+			Object res = verifyConnection(EOObjectStoreCoordinator.defaultCoordinator(),
+					model, logger, disableSchemaUpdate, !canCreate);
+			if(res instanceof Exception && !(res instanceof NumberFormatException)) {
+				cd.takeValueForKey(res,"error");
+//				cd.takeValueForKey(model, "onModel");
+				success.addObject(cd);
+			} else if(res != null) {
+				if(res instanceof Number)
+					model.userInfo().takeValueForKey(res, "versionFound");
+				success.addObject(model);
 			}
 		} // while (models.hasMoreElements())
-		if(tag != null && os != null) {
-			Object store = (success)?os: NSKeyValueCoding.NullValue;
-			((EOObjectStore)os).setUserInfoForKey(tag, "tag");
-			if(coordinatorsByTag == null)
-				coordinatorsByTag = new NSMutableDictionary(store,tag);
-			else
-				coordinatorsByTag.takeValueForKey(store, tag);
+		if(tag != null && success.count() == 0) {
+			EOObjectStoreCoordinator.defaultCoordinator().setUserInfoForKey(tag, "tag");
+			coordinatorsByTag = new NSMutableDictionary(
+					EOObjectStoreCoordinator.defaultCoordinator(),tag);
 		}
-		ec.dispose();
+//		ec.dispose();
+		if(success.count() == 0)
+			return null;
 		return success;
 	}
-	
-	protected static boolean verifyConnection(EODatabaseContext dc, EOModel model,
-			Logger logger, String url, boolean noUpd) {
-		boolean success = true;
-		EOAdaptorChannel ac = dc.availableChannel().adaptorChannel();
+
+	protected static String prepareConnectionURL(String serverURL,
+			String urlSuffix, EOModel model, String dbName) {
+		String url;
+		boolean onlyHostname = !serverURL.startsWith("jdbc");
+		String urlFromModel = (String)model.connectionDictionary().valueForKey("URL");
+		if(dbName == null && onlyHostname) {
+			url = urlFromModel.replaceFirst("localhost", serverURL);
+			if(urlSuffix != null) {
+				int idx = url.indexOf('?');
+				if(idx > 0)
+					url = url.substring(0,idx);
+				url = url + urlSuffix;
+			}
+		} else {
+			int index = urlFromModel.indexOf("localhost");
+			StringBuffer buf = new StringBuffer(serverURL);
+			if (onlyHostname)
+				buf.insert(0, urlFromModel.substring(0, index));
+			if(buf.charAt(buf.length() -1) == '/')
+				buf.deleteCharAt(buf.length() -1);
+			if(dbName == null) {
+				int idx = urlFromModel.indexOf('?',index + 9);
+				if(idx > 0 && urlSuffix != null) {
+					buf.append(urlFromModel.substring(index + 9,idx));
+				} else {
+					buf.append(urlFromModel.substring(index + 9));
+				}
+			} else {
+				if(onlyHostname)
+					buf.append(urlFromModel.charAt(index + 9));
+				else {
+					char c = buf.charAt(buf.length() -1);
+					if((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9'))
+						buf.append('/');
+				}
+				buf.append(dbName);
+			}
+			if(urlSuffix != null)
+				buf.append(urlSuffix);
+			url = buf.toString();
+		}
+		return url;
+	}
+		
+	protected static Object verifyConnection(EOObjectStoreCoordinator os, EOModel model,
+			Logger logger, boolean noUpd, boolean noCre) {
 		NSDictionary modelInfo = model.userInfo();
 		if(modelInfo != null)
 			modelInfo = (NSDictionary)modelInfo.valueForKey("schemaVersion");
+		NSDictionary cd = model.connectionDictionary();
 		if(modelInfo != null) {
-			int modelNum = Integer.parseInt(modelInfo.valueForKey("number").toString());
+			int modelNum = -1;
 			NSDictionary schemaVersion = null;
 			StringBuilder buf = new StringBuilder(
 "SELECT VERSION_NUMBER, VERSION_TITLE FROM SCHEMA_VERSION WHERE MODEL_NAME = '");
 			buf.append(model.name()).append("' ORDER BY VERSION_NUMBER DESC;");
+			EODatabaseContext dc = EODatabaseContext.registeredDatabaseContextForModel(model, os);
+			dc.lock();
+			EOAdaptorChannel ac = null;
 			try {
+				cd = dc.database().adaptor().connectionDictionary();
+				ac = dc.availableChannel().adaptorChannel();
+			} catch (JDBCAdaptorException e) {
+				String msg = "Failed to connect to database "
+					+ model.connectionDictionary().valueForKey("URL");
+				logger.log(WOLogLevel.INFO,msg,e);
+				dc.unlock();
+				return e.sqlException();
+			}
+			try {
+				modelNum = Integer.parseInt(modelInfo.valueForKey("number").toString());
 				EOSQLExpression expr = ac.adaptorContext().adaptor().
 						expressionFactory().expressionForString(buf.toString());
 				ac.evaluateExpression(expr);
@@ -330,8 +400,10 @@ public class DataBaseConnector {
 				if(ac.isFetchInProgress())
 					ac.cancelFetch();
 			} catch (Exception e) {
-				logger.log(WOLogLevel.INFO,
-						"Failed to fetch schema info for model " + model.name(),e);
+				String msg = "Failed to fetch schema info for model " + model.name();
+				logger.log(WOLogLevel.INFO,msg,e);
+				dc.unlock();
+				return e;
 			}
 			buf.delete(0, buf.length());
 			buf.append("Model '").append(model.name()).append('\'');
@@ -343,56 +415,137 @@ public class DataBaseConnector {
 				if(schemaVersion != null) {
 					buf.append(". found version ").append(schemNum).append('(');
 					buf.append(schemaVersion.valueForKey("title")).append(')');
+				} else {
+					buf.append(". No schema info found.");
 				}
 				if(noUpd || schemNum > modelNum) {
 					logger.severe(buf.toString());
-					success = false;
+					return schemaVersion.valueForKey("number");
 				} else {
+					if(noCre && schemaVersion == null) {
+						logger.severe(buf.toString());
+						dc.unlock();
+						return new Integer(0);
+					}
 					logger.info(buf.toString());
 					buf.delete(0, buf.length());
 					try {
-						DataBaseUtility.updateModel(model, schemNum, ac);
-						buf.append("Schema for model '").append(model.name()).append("' updated");
-						if(schemaVersion != null) {
-							buf.append(" from v").append(schemNum).append(' ').append('(');
-							buf.append(schemaVersion.valueForKey("title")).append(')');
+						if (schemaVersion == null) {
+							DataBaseUtility.createTables(model, ac);
+						} else {
+							DataBaseUtility.updateModel(model, schemNum, ac);
 						}
-						buf.append(" to v").append(modelNum).append(' ').append('(').append(
-								modelInfo.valueForKey("title")).append(')');
+						buf.append("Schema for model '").append(model.name());
+						if(schemaVersion == null) {
+							buf.append("' created with v");
+						} else {
+							buf.append("' updated from v").append(schemNum).append(' ').append('(');
+							buf.append(schemaVersion.valueForKey("title")).append(") to v");
+						}
+						buf.append(modelNum).append(' ').append('(');
+						buf.append(modelInfo.valueForKey("title")).append(')');
 						logger.info(buf.toString());
 					} catch (Exception e) {
-						buf.append("Failed to update schema for model '");
+						if(schemaVersion == null)
+							buf.append("Failed to create schema for model '");
+						else
+							buf.append("Failed to update schema for model '");
 						buf.append(model.name()).append('\'');
 						logger.log(WOLogLevel.SEVERE,buf.toString(),e);
-						success = false;
+						return buf;
 					}
-				}
-			}
+				} // if can update
+			} // (modelNum != schemNum)
+//			ac.closeChannel();
+			dc.unlock();
 		} // check modelInfo
-		ac.closeChannel();
-		if(success) {
 			StringBuilder message = new StringBuilder("Model '");
 			message.append(model.name()).append("' connected to database");
 			if(modelInfo != null) {
 				message.append(", schema version: ");
 				message.append(modelInfo.valueForKey("title"));
 			}
+			String url = (String)cd.valueForKey("URL");
 			if(url != null)
 				message.append('\n').append(url);
 			logger.config(message.toString());
-		}
-		return success;
+		return null;
 	}
 	
 	public static EOObjectStore objectStoreForTag(String tag) {
+		return objectStoreForTag(tag,false);
+	}
+	public static EOObjectStore objectStoreForTag(String tag, boolean force) {
 		Object os = coordinatorsByTag.valueForKey(tag);
-		if(os == null) {
+		if(force || os == null) {
+			SettingsReader dbSettings = SettingsReader.settingsForPath("dbConnection", false);
+			String serverURL = dbSettings.get("serverURL",null);
+			String urlSuffix = dbSettings.get("urlSuffix",null);
+			boolean disableSchemaUpdate = dbSettings.getBoolean("disableSchemaUpdate", false);
+			NSMutableDictionary connDict = connectionDictionaryFromSettings(dbSettings, null);
 			os = new EOObjectStoreCoordinator();
-			if(!makeConnections((EOObjectStore)os, tag))
-				return null;
+			EOEditingContext ec = new EOEditingContext((EOObjectStoreCoordinator)os);
+			ec.lock();
+//			EOModelGroup mg = new EOModelGroup();
+//			mg.setDelegate(EOModelGroup.defaultGroup().delegate());
+//			EOModelGroup.setModelGroupForObjectStoreCoordinator((EOObjectStoreCoordinator)os, mg);
+			SettingsReader dbMapping = dbSettings.subreaderForPath("dbMapping", false);
+			Enumeration enu = EOModelGroup.defaultGroup().models().objectEnumerator();
+			Logger logger = Logger.getLogger("rujel.dbConnection");
+			while (enu.hasMoreElements()) {
+				EOModel model = (EOModel) enu.nextElement();
+				NSMutableDictionary cd = model.connectionDictionary().mutableClone();
+//				model = mg.addModelWithPathURL(model.pathURL());
+//				model.setConnectionDictionary(cd);
+				if(model.name().endsWith("Prototypes"))
+					continue;
+				SettingsReader currSettings = dbSettings.subreaderForPath(model.name(), false);
+				if(currSettings == null)
+					continue;
+				String dbName = null;
+				dbName = currSettings.get("dbName", null);
+				if(dbMapping != null) {
+					Object mapped = dbMapping.valueForKey(dbName);
+					if(mapped != null) {
+						if(mapped instanceof String) {
+							dbName = (String)mapped;
+						} else if(mapped instanceof SettingsReader) {
+							dbName = ((SettingsReader)mapped).get("dbName", null);
+							if(dbName == null)
+								continue;
+						}
+					}
+				}
+				if(!dbName.contains("%s"))
+					continue;
+				dbName = String.format(dbName, tag);
+				
+				cd = (NSMutableDictionary)cdForDB.valueForKey(dbName);
+				if(cd == null) {
+					cd = connDict.mutableClone();
+					cd = connectionDictionaryFromSettings(currSettings, cd);
+					String url = prepareConnectionURL(serverURL, urlSuffix, model, dbName);
+					cd.takeValueForKey(url, "URL");
+					cdForDB.takeValueForKey(cd, dbName);
+					EODatabaseContext.forceConnectionWithModel(model, cd, ec);
+//					EOAdaptorChannel ac = dc.availableChannel().adaptorChannel();
+//					ac.closeChannel();
+				}
+//				model.setConnectionDictionary(cd);
+				if(verifyConnection((EOObjectStoreCoordinator)os,
+						model, logger, disableSchemaUpdate, true) != null) {
+					coordinatorsByTag.setObjectForKey(NSKeyValueCoding.NullValue, tag);
+					ec.unlock();
+					return null;
+				}
+			} // EOModelGroup.defaultGroup().models().objectEnumerator();
+			
+			coordinatorsByTag.setObjectForKey(os, tag);
+			ec.unlock();
 		} else if(os == NSKeyValueCoding.NullValue) {
 			return null;
 		}
 		return (EOObjectStore)os;
 	}
+	
 }

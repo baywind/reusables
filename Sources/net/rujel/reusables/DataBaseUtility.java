@@ -46,8 +46,14 @@ import java.sql.Statement;
 
 import com.webobjects.appserver.WOApplication;
 import com.webobjects.eoaccess.EOAdaptorChannel;
+import com.webobjects.eoaccess.EODatabaseChannel;
+import com.webobjects.eoaccess.EODatabaseContext;
 import com.webobjects.eoaccess.EOModel;
+import com.webobjects.eoaccess.EOModelGroup;
 import com.webobjects.eoaccess.EOSQLExpressionFactory;
+import com.webobjects.eocontrol.EOEditingContext;
+import com.webobjects.eocontrol.EOObjectStore;
+import com.webobjects.eocontrol.EOObjectStoreCoordinator;
 import com.webobjects.foundation.NSDictionary;
 import com.webobjects.foundation.NSMutableDictionary;
 
@@ -56,6 +62,81 @@ public class DataBaseUtility {
 	
 	public static Logger logger = Logger.getLogger("rujel.dbConnection");
 
+	public static String dbEngine(String url) {
+		if(!url.startsWith("jdbc:"))
+			throw new IllegalArgumentException("URL string should begin with 'jdbc:'");
+		int idx = url.indexOf(':', 5);
+		return url.substring(5,idx);
+	}
+	
+	public static void executeScript(EOObjectStore ec, String model, InputStream script) 
+																				throws Exception {
+		EODatabaseContext dctx;
+		if(ec instanceof EODatabaseContext) {
+			dctx = (EODatabaseContext)ec;
+		} else {
+			EOObjectStoreCoordinator os = null;
+			if(ec instanceof EOObjectStoreCoordinator)
+				os = (EOObjectStoreCoordinator)ec;
+			else if(ec instanceof EOEditingContext)
+				os = (EOObjectStoreCoordinator)((EOEditingContext)ec).rootObjectStore();
+			EOModelGroup mg = EOModelGroup.modelGroupForObjectStoreCoordinator(os);
+			EOModel mdl = mg.modelNamed(model);
+			dctx = EODatabaseContext.registeredDatabaseContextForModel(mdl, os);
+		}
+		dctx.lock();
+		try {
+			EODatabaseChannel dcnl = dctx.availableChannel();
+			EOAdaptorChannel acnl = dcnl.adaptorChannel();
+			if(!acnl.isOpen()) {
+				acnl = dctx.adaptorContext().createAdaptorChannel();
+				acnl.openChannel();
+			}
+			executeScript(acnl, script);
+		} finally {
+			dctx.unlock();
+		}
+	}
+	
+	public static void executeScript(EOAdaptorChannel ac, InputStream script) throws Exception {
+		BufferedReader update = new BufferedReader(new InputStreamReader(script,"utf8"));
+		StringBuilder buf = new StringBuilder();
+		EOSQLExpressionFactory exprFactory = ac.adaptorContext().adaptor().expressionFactory();
+		while(true) {
+			String line = update.readLine();
+			if(line == null)
+				break;
+			line = line.trim();
+			if(line.length() == 0)
+				continue;
+			if(line.startsWith("--"))
+				continue;
+			if(buf.length() > 0)
+				buf.append('\n');
+			buf.append(line);
+			if(line.charAt(line.length() -1) == ';') {
+				line = buf.toString();
+				buf.delete(0, buf.length());
+				ac.evaluateExpression(exprFactory.expressionForString(line));
+				if(ac.isFetchInProgress())
+					ac.cancelFetch();
+			}
+		}
+	}
+	
+	public static void createTables(EOModel model, EOAdaptorChannel ac) 
+																		throws Exception {
+		String framework = (model.userInfo() == null) ? null :
+				(String)model.userInfo().valueForKey("framework");
+		String filename = (String)model.connectionDictionary().valueForKey("URL");
+		filename = "cre" + model.name() + '.' + dbEngine(filename);
+		InputStream cre = WOApplication.application().resourceManager().inputStreamForResourceNamed(
+				filename, framework, null);
+		if(cre == null)
+			throw new IllegalStateException("No tables creation script found");
+		executeScript(ac, cre);
+	}
+	
 	public static void updateModel(EOModel model, int fromVer, EOAdaptorChannel ac) 
 																		throws Exception {
 		NSDictionary modelInfo = model.userInfo();
@@ -69,8 +150,10 @@ public class DataBaseUtility {
 			modelVersion = Integer.parseInt(verStr);
 		}
 		String framework = (String)modelInfo.valueForKey("framework");
+		String filename = (String)model.connectionDictionary().valueForKey("URL");
+		filename = "upd" + model.name() + '.' + dbEngine(filename);
 		InputStream upd = WOApplication.application().resourceManager().inputStreamForResourceNamed(
-				"upd" + model.name() + ".sql", framework, null);
+				filename, framework, null);
 		if(upd == null)
 			throw new IllegalStateException("No schema update script found");
 		BufferedReader update = new BufferedReader(new InputStreamReader(upd,"utf8"));
@@ -148,6 +231,7 @@ public class DataBaseUtility {
 					"Update script failed to update schema to actual model version");
 	}
 	
+	@Deprecated
 	public static boolean createDatabaseForModel(EOModel model) {
 		NSDictionary modelInfo = model.userInfo();
 		if(modelInfo == null) {
@@ -251,8 +335,48 @@ public class DataBaseUtility {
 		}
 		return DriverManager.getConnection(serverURL,connectionProps);
 	}
+
+	public static String[] extractDBfromURL(String url) {
+		String[] out = new String[2];
+		out[0] = url;
+		int idx = url.indexOf(':', 5);
+		if(idx <= 0) {
+			return out;
+		}
+		if(url.charAt(idx +1) == '/') {
+			idx = url.indexOf('/', idx +3);
+			if(idx < 0)
+				return out;
+			idx++;
+		}
+		int idx2 = url.indexOf('?', idx);
+		if(idx2 < 0) {
+			out[0] = url.substring(0, idx);
+			out[1] = url.substring(idx);
+		} else {
+			out[0] = url.substring(0, idx) + url.substring(idx2);
+			out[1] = url.substring(idx,idx2);
+		}
+		return out;
+	}
+		
+	public static Connection getConnection(NSDictionary connectionDictionary) throws Exception {
+		String serverURL = (String)connectionDictionary.valueForKey("URL");
+		if(serverURL == null)
+			return null;
+		String user = (String)connectionDictionary.valueForKey("username");
+		String password = (String)connectionDictionary.valueForKey("password");
+		String driverName = (String)connectionDictionary.valueForKey("driver");
+		if(driverName != null) {
+			Class driverClass = Class.forName(driverName);
+			Constructor driverConstructor = driverClass.getConstructor((Class[])null);
+			Driver driver = (Driver)driverConstructor.newInstance((Object[])null);
+			DriverManager.registerDriver(driver);
+		}
+		return DriverManager.getConnection(serverURL,user,password);
+	}
 	
-	protected static void executeScript(Connection conn, InputStream script, NSDictionary mapping)
+	public static void executeScript(Connection conn, InputStream script, NSDictionary mapping)
 			throws SQLException, IOException {
 	      Statement stmnt = conn.createStatement();
 	      StringBuilder buf = new StringBuilder();
@@ -278,6 +402,28 @@ public class DataBaseUtility {
 	    	  }
 	      }
 	}
+	
+//	private boolean appendWithoutComments(String line, boolean cmnt, StringBuilder buf, int idx) {
+//		if(cmnt) {
+//			int end = line.indexOf("*/",idx);
+//			if(end < 0)
+//				return true;
+//			end +=2;
+//			if(end >= line.length())
+//				return false;
+//			return appendWithoutComments(line, false, buf, end);
+//		} else {
+//			int c = line.indexOf("*/",idx);
+//			if(c < 0) {
+//				buf.append(line.substring(idx));
+//				return false;
+//			}
+//			if(c > 0)
+//				buf.append(line.substring(idx, c));
+//			c +=2;
+//			return appendWithoutComments(line, true, buf, c);
+//		}
+//	}
 	
 	private static void replace(StringBuilder buf, NSDictionary mapping) {
 		if(mapping == null)
