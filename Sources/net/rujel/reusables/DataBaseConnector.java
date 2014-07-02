@@ -120,6 +120,7 @@ public class DataBaseConnector {
 		NSMutableDictionary connDict = connectionDictionaryFromSettings(dbSettings, null);
 //		EOEditingContext ec = (os != null)?new EOEditingContext(os):new EOEditingContext();
 		SettingsReader dbMapping = dbSettings.subreaderForPath("dbMapping", false);
+		cdForDB.removeAllObjects();
 		while (enu.hasMoreElements()) {
 			EOModel model = (EOModel) enu.nextElement();
 			if(model.name().endsWith("Prototypes")) {
@@ -522,12 +523,20 @@ public class DataBaseConnector {
 				
 				cd = (NSMutableDictionary)cdForDB.valueForKey(dbName);
 				if(cd == null) {
-					cd = connDict.mutableClone();
-					cd = connectionDictionaryFromSettings(currSettings, cd);
-					String url = prepareConnectionURL(serverURL, urlSuffix, model, dbName);
-					cd.takeValueForKey(url, "URL");
-					cdForDB.takeValueForKey(cd, dbName);
-					EODatabaseContext.forceConnectionWithModel(model, cd, ec);
+					String url = dbName;
+					try {
+						cd = connDict.mutableClone();
+						cd = connectionDictionaryFromSettings(currSettings, cd);
+						url = prepareConnectionURL(serverURL, urlSuffix, model, dbName);
+						cd.takeValueForKey(url, "URL");
+						cdForDB.takeValueForKey(cd, dbName);
+						EODatabaseContext.forceConnectionWithModel(model, cd, ec);
+					} catch (Exception e) {
+						logger.log(WOLogLevel.INFO, "Failed connecting to database '"
+								+ dbName + "' with url " + url, e);
+						ec.unlock();
+						return null;
+					}
 //					EOAdaptorChannel ac = dc.availableChannel().adaptorChannel();
 //					ac.closeChannel();
 				}
