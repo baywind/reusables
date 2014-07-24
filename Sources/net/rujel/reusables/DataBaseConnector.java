@@ -331,22 +331,30 @@ public class DataBaseConnector {
 				url = url + urlSuffix;
 			}
 		} else {
-			int index = urlFromModel.indexOf("localhost");
 			StringBuffer buf = new StringBuffer(serverURL);
-			if (onlyHostname)
-				buf.insert(0, urlFromModel.substring(0, index));
 			if(buf.charAt(buf.length() -1) == '/')
 				buf.deleteCharAt(buf.length() -1);
+			int index = urlFromModel.indexOf("localhost");
+			if(index < 0) {
+				if(urlFromModel.startsWith(serverURL))
+					index = serverURL.length();
+				if(urlFromModel.charAt(index) != '/')
+					index--;
+			} else {
+				if (onlyHostname)
+					buf.insert(0, urlFromModel.substring(0, index));
+				index += 9;
+			}
 			if(dbName == null) {
-				int idx = urlFromModel.indexOf('?',index + 9);
+				int idx = urlFromModel.indexOf('?',index);
 				if(idx > 0 && urlSuffix != null) {
-					buf.append(urlFromModel.substring(index + 9,idx));
+					buf.append(urlFromModel.substring(index,idx));
 				} else {
-					buf.append(urlFromModel.substring(index + 9));
+					buf.append(urlFromModel.substring(index));
 				}
 			} else {
 				if(onlyHostname)
-					buf.append(urlFromModel.charAt(index + 9));
+					buf.append(urlFromModel.charAt(index));
 				else {
 					char c = buf.charAt(buf.length() -1);
 					if((c>='a'&&c<='z')||(c>='A'&&c<='Z')||(c>='0'&&c<='9'))
@@ -517,7 +525,7 @@ public class DataBaseConnector {
 						}
 					}
 				}
-				if(!dbName.contains("%s"))
+				if(dbName == null || !dbName.contains("%s"))
 					continue;
 				dbName = String.format(dbName, tag);
 				
