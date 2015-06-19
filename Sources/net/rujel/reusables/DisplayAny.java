@@ -587,8 +587,8 @@ public class DisplayAny extends ExtDynamicElement {
     			Constructor cn = cl.getConstructor(String.class);
     			return cn.newInstance(obj.toString());
     		}
-    		throw new IllegalArgumentException("Could not coerce argument of type" +
-    				obj.getClass().getName() + " to required type" + cl.getName());
+    		throw new IllegalArgumentException("Could not coerce argument of type " +
+    				obj.getClass().getName() + " to required type " + cl.getName());
     	}
     	
     	public static void clearResultCache(NSMutableDictionary dict, 
