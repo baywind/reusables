@@ -401,6 +401,9 @@ public class DataBaseUtility {
 	    		  upd += stmnt.executeUpdate(line);
 	    	  }
 	      }
+	      if(upd > 0) {
+	    	  
+	      }
 	}
 	
 //	private boolean appendWithoutComments(String line, boolean cmnt, StringBuilder buf, int idx) {

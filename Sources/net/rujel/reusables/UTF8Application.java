@@ -39,6 +39,7 @@ public class UTF8Application extends WOApplication {
 			WOMessage.setDefaultURLEncoding(_NSUtilities.UTF8StringEncoding);
 			WOMessage.setDefaultEncoding(_NSUtilities.UTF8StringEncoding);
 		}*/
+		@SuppressWarnings("static-access")
 		public WOResponse dispatchRequest(WORequest aRequest) {
 			aRequest.setDefaultFormValueEncoding(_NSUtilities.UTF8StringEncoding);
 			//refactor for 5.4
