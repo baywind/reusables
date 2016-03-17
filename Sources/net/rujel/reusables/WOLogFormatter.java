@@ -239,8 +239,8 @@ public class WOLogFormatter extends Formatter {
 					ses = (WOSession)param[i];
 				} else if (param[i] instanceof EOEnterpriseObject && eo == null) {
 					eo = (EOEnterpriseObject)param[i];
-					if(ses == null && eo.editingContext() instanceof SessionedEditingContext) {
-						ses = ((SessionedEditingContext)eo.editingContext()).session();
+					if(ses == null) {
+						ses = SessionedEditingContext.sessionForObject(eo);
 					}
 				} else if(param[i] instanceof EOGlobalID && gid == null) {
 					gid = (EOGlobalID)param[i];

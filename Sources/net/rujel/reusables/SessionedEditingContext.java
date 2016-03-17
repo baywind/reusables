@@ -162,4 +162,10 @@ public class SessionedEditingContext extends EOEditingContext {
 					   "Inserting not new object",new Object[] {session,object, new Exception()});
 	   }
 
+		public static WOSession sessionForObject(EOEnterpriseObject eo) {
+			EOEditingContext ec = eo.editingContext();
+			if(ec instanceof SessionedEditingContext)
+				return ((SessionedEditingContext)ec).session();
+			return null;
+		}
 }

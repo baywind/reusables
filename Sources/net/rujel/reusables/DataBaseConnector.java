@@ -392,7 +392,9 @@ public class DataBaseConnector {
 					+ model.connectionDictionary().valueForKey("URL");
 				logger.log(WOLogLevel.INFO,msg,e);
 				dc.unlock();
-				return e.sqlException();
+				Exception ex = e.sqlException();
+				if(ex == null) ex = e;
+				return ex;
 			}
 			try {
 				modelNum = Integer.parseInt(modelInfo.valueForKey("number").toString());
