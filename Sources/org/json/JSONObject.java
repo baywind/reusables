@@ -41,7 +41,6 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import com.webobjects.foundation.NSArray;
-import com.webobjects.foundation.NSDictionary;
 import com.webobjects.foundation.NSKeyValueCoding;
 import com.webobjects.foundation.NSMutableArray;
 import com.webobjects.foundation.NSMutableDictionary;
@@ -1928,7 +1927,7 @@ public class JSONObject implements NSKeyValueCoding {
 			return list;
 		}
 		
-		public static NSDictionary dictFromJSON(JSONObject json, boolean recursive) {
+		public static NSMutableDictionary dictFromJSON(JSONObject json, boolean recursive) {
 			if(json == null)
 				return null;
 			NSMutableDictionary dict = new NSMutableDictionary();
