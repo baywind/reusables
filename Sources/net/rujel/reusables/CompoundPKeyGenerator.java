@@ -42,8 +42,18 @@ public class CompoundPKeyGenerator {
 	public NSDictionary databaseContextNewPrimaryKey(EODatabaseContext dbCtxt,
             Object object, EOEntity entity) {
 		NSArray pKeys = entity.primaryKeyAttributeNames();
-		if(pKeys == null || pKeys.count() < 2)
+		if(pKeys == null || pKeys.count() < 2) {
+			if(pKeys.count() == 1) {
+				String key = (String)pKeys.objectAtIndex(0);
+				EOAttribute attr = entity.attributeNamed(key);
+				if(attr != null && entity.classProperties().contains(attr)) {
+					Object value = NSKeyValueCoding.Utility.valueForKey(object, key);
+					if(value != null)
+						return new NSDictionary(value,key);
+				}
+			}
 			return null;
+		}
 		return compoundKey((EOEnterpriseObject)object,pKeys,entity.relationships());
 	}
 

@@ -30,6 +30,7 @@
 package net.rujel.reusables;
 
 import com.webobjects.appserver.*;
+//import com.webobjects.eocontrol.EOEnterpriseObject;
 import com.webobjects.eocontrol.EOQualifier;
 import com.webobjects.foundation.*;
 
@@ -46,6 +47,7 @@ public class Tabs extends WOComponent {
 		tabItem = item;
 		_attribs = null;
 	}
+	public NSDictionary tabgroup;
 
 	
     public Tabs(WOContext context) {
@@ -182,6 +184,18 @@ public class Tabs extends WOComponent {
 		} else {
 			if(tabItem == currTab)
 				return "selection";
+			/*
+			if(tabItem instanceof EOEnterpriseObject && currTab instanceof EOEnterpriseObject) {
+				EOEnterpriseObject[] e = new EOEnterpriseObject[] {
+						(EOEnterpriseObject)tabItem,(EOEnterpriseObject)currTab};
+				if(e[0].editingContext() != e[1].editingContext() &&
+						e[0].entityName().equals(e[1].entityName())) {
+					Object gid0 = e[0].editingContext().globalIDForObject(e[0]);
+					Object gid1 = e[1].editingContext().globalIDForObject(e[1]);
+					if(gid1.equals(gid0))
+						return "selection";
+				}
+			}*/
 			String idAttribute = (String)valueForBinding("idAttribute");
 			if(idAttribute == null && currTab instanceof WOComponent) {
 				idAttribute = ((WOComponent)currTab).name();
