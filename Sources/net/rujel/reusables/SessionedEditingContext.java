@@ -89,9 +89,11 @@ public class SessionedEditingContext extends EOEditingContext {
 	}
 	
 	protected void fin() {
-		if(session instanceof MultiECLockManager.Session)
-			((MultiECLockManager.Session)session).
-						ecLockManager().unregisterEditingContext(this);
+		if(session instanceof MultiECLockManager.Session) {
+			MultiECLockManager m = ((MultiECLockManager.Session)session).ecLockManager();
+			if(m != null)
+				m.unregisterEditingContext(this);
+		}
 		if(_stackTraces.count() > 0)
 			logger.log(Level.WARNING,"disposing locked editing context (" + 
 					_nameOfLockingThread + " : " + _stackTraces.count() + ')', new Object[] 
