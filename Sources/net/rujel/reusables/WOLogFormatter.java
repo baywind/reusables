@@ -87,7 +87,7 @@ public class WOLogFormatter extends Formatter {
 			fin = (lastElem != null && trace[i].equals(lastElem));
 			if(i==0 || fin || myClass(trace[i].getClassName())) {
 				if(html) toAppend.append("<br/>");
-				toAppend.append('\n');
+				toAppend.append('\n').append('\t');
 				//if(html) toAppend.append("<span style=\"width:3em;\">");
 				toAppend.append('[').append(i).append(']');
 				//if(html) toAppend.append("</span> ");
@@ -104,16 +104,16 @@ public class WOLogFormatter extends Formatter {
 		}
 		if(t.getCause() != null && t.getCause() != t) {
 			if(html) toAppend.append("<br/>");
-			toAppend.append('\n');
+			toAppend.append('\n').append('\t');
 			formatTrowable(t.getCause(),toAppend,trace[0],html);
 		} else if(t instanceof NSForwardException) {
 			if(html) toAppend.append("<br/>");
-			toAppend.append('\n');
+			toAppend.append('\n').append('\t');
 			formatTrowable(((NSForwardException)t).originalException(),toAppend,trace[0],html);
 		} else if(t instanceof NSValidation.ValidationException) {
 			NSValidation.ValidationException vex = (NSValidation.ValidationException)t;
 			if(html) toAppend.append("<br/>");
-			toAppend.append('\n');
+			toAppend.append('\n').append('\t');
 			String key = vex.key();
 			Object obj = vex.object();
 			if(key != null) {
@@ -191,7 +191,7 @@ public class WOLogFormatter extends Formatter {
 		while (den.hasMoreElements()) {
 			key = den.nextElement();
 			buf.append(key).append(" =\t");
-			formatObject(dict.objectForKey(key),buf).append('\n');
+			formatObject(dict.objectForKey(key),buf).append('\n').append('\t');
 		}
 		return buf;
 	}
@@ -287,16 +287,16 @@ public class WOLogFormatter extends Formatter {
 			}
 		}
 		if(t != null) {
-			result.append('\n');
+			result.append('\n').append('\t');
 			formatTrowable(t,result);
 		}
 		if(otherObjects.count() > 0) {
 			Enumeration en = otherObjects.objectEnumerator();
 			while(en.hasMoreElements()) {
-				result.append('\n');
+				result.append('\n').append('\t');
 				formatObject(en.nextElement(),result);
 			}
 		}
-		return result.append("\r\n").toString();
+		return result.append("\n").toString();
 	}
 }
