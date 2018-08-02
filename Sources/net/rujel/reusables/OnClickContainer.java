@@ -108,6 +108,12 @@ public class OnClickContainer extends ExtDynamicElement {
     		return null;
     	return super.invokeAction(aRequest, aContext);
     }
+    
+	public void takeValuesFromRequest(WORequest aRequest, WOContext aContext) {
+		if(Various.boolForObject(valueForBinding("hide", aContext)))
+			return;
+		super.takeValuesFromRequest(aRequest, aContext);
+	}
 	
 /*    public WOActionResults invokeAction(WORequest aRequest, WOContext aContext) {
     	if(aContext.elementID().equals(aContext.senderID())) {
