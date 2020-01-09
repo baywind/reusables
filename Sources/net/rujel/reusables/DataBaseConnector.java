@@ -192,24 +192,11 @@ public class DataBaseConnector {
 				cd = connDict.mutableClone();
 			if(cd.count() > 0) {
 				if(url == null && serverURL != null)
-					url = prepareConnectionURL(serverURL, urlSuffix, model, dbName);
+					url = prepareConnectionURL(serverURL, urlSuffix, model, dbName, dbSettings.get("changeCase",null));
 				if(url != null) {
 					cd.takeValueForKey(url, "URL");
 				}
-				String changeCase = dbSettings.get("changeCase",null);
-				if(changeCase != null) {
-					if(dbName == null)
-						dbName = DataBaseUtility.extractDBfromURL(url)[1];
-					String tmp = dbName;
-					if(changeCase.equalsIgnoreCase("lowercase"))
-						dbName = dbName.toLowerCase();
-					else if(changeCase.equalsIgnoreCase("uppercase"))
-						dbName = dbName.toUpperCase();
-					if(url != null) {
-						url = url.replaceAll(tmp, dbName);
-						cd.takeValueForKey(url, "URL");
-					}
-				}
+				/*
 				String usernameForDB = dbSettings.get("usernameForDB",null);
 				if(Various.boolForObject(usernameForDB)) {
 					if(dbName == null)
@@ -220,6 +207,7 @@ public class DataBaseConnector {
 						dbName = dbName.toUpperCase();
 					cd.takeValueForKey(dbName, "username");
 				} // usernameForDB
+				*/
 				model.setConnectionDictionary(cd);
 			}
 			/*
@@ -318,7 +306,7 @@ public class DataBaseConnector {
 	}
 
 	protected static String prepareConnectionURL(String serverURL,
-			String urlSuffix, EOModel model, String dbName) {
+			String urlSuffix, EOModel model, String dbName, String changeCase) {
 		String url;
 		boolean onlyHostname = !serverURL.startsWith("jdbc");
 		String urlFromModel = (String)model.connectionDictionary().valueForKey("URL");
@@ -345,6 +333,7 @@ public class DataBaseConnector {
 					buf.insert(0, urlFromModel.substring(0, index));
 				index += 9;
 			}
+			
 			if(dbName == null) {
 				int idx = urlFromModel.indexOf('?',index);
 				if(idx > 0 && urlSuffix != null) {
@@ -365,6 +354,18 @@ public class DataBaseConnector {
 			if(urlSuffix != null)
 				buf.append(urlSuffix);
 			url = buf.toString();
+		}
+		if(changeCase != null) {
+			if(dbName == null)
+				dbName = DataBaseUtility.extractDBfromURL(url)[1];
+			String tmp = dbName;
+			if(changeCase.equalsIgnoreCase("lowercase"))
+				dbName = dbName.toLowerCase();
+			else if(changeCase.equalsIgnoreCase("uppercase"))
+				dbName = dbName.toUpperCase();
+			if(url != null) {
+				url = url.replaceAll(tmp, dbName);
+			}
 		}
 		return url;
 	}
@@ -537,7 +538,7 @@ public class DataBaseConnector {
 					try {
 						cd = connDict.mutableClone();
 						cd = connectionDictionaryFromSettings(currSettings, cd);
-						url = prepareConnectionURL(serverURL, urlSuffix, model, dbName);
+						url = prepareConnectionURL(serverURL, urlSuffix, model, dbName, dbSettings.get("changeCase",null));
 						cd.takeValueForKey(url, "URL");
 						cdForDB.takeValueForKey(cd, dbName);
 						EODatabaseContext.forceConnectionWithModel(model, cd, ec);
